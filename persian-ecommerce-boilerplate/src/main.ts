@@ -1,3 +1,7 @@
+// Resolve TypeScript aliases when Vercel executes the compiled Node entrypoint.
+import { register } from 'tsconfig-paths';
+register({ baseUrl: __dirname, paths: { '@/*': ['*'] } });
+
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
