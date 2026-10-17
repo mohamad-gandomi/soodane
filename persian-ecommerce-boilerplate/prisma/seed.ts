@@ -185,6 +185,10 @@ const MEDIA_DEFINITIONS: MediaDef[] = [
 async function main() {
   console.log('🌱 Starting Sodaneh database seed...');
 
+  if (process.env.DEMO_BOOTSTRAP === 'true' && new URL(process.env.DATABASE_URL!).pathname !== '/soodane_demo') {
+    throw new Error('Demo seeding is restricted to soodane_demo');
+  }
+
   // 1. Check for existing ADMIN user to preserve, or create one
   const existingAdmin = await prisma.user.findFirst({
     where: { role: Role.ADMIN },
@@ -282,7 +286,15 @@ async function main() {
       }
     }
 
-    const publicUrl = `http://localhost:4000/uploads/${def.relativePath}`;
+    const staticName = def.relativePath.startsWith('categories/')
+      ? def.relativePath
+      : def.filename.includes('rice') ? 'products/rice.png'
+      : def.filename.includes('oil') ? 'products/oil.jpg'
+      : def.filename.includes('tea') ? 'products/tea.jpg'
+      : 'products/tissue.jpg';
+    const publicUrl = process.env.SEED_ASSET_BASE_URL
+      ? `${process.env.SEED_ASSET_BASE_URL.replace(/\/$/, '')}/${staticName}`
+      : `http://localhost:4000/uploads/${def.relativePath}`;
 
     const mediaRecord = await prisma.media.create({
       data: {

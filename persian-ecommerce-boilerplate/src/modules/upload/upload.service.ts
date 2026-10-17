@@ -1,4 +1,4 @@
-import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
+import { Injectable, BadRequestException, NotFoundException, ServiceUnavailableException } from '@nestjs/common';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as sharpModule from 'sharp';
@@ -26,12 +26,15 @@ export class UploadService {
       process.cwd(),
       this.configService.get<string>('upload.dir') || './uploads',
     );
-    if (!fs.existsSync(this.uploadDir)) {
+    if (this.configService.get<boolean>('upload.enabled', true) && !fs.existsSync(this.uploadDir)) {
       fs.mkdirSync(this.uploadDir, { recursive: true });
     }
   }
 
   async handleUploadedFile(file: Express.Multer.File, options?: UploadProcessingOptions) {
+    if (!this.configService.get<boolean>('upload.enabled', true)) {
+      throw new ServiceUnavailableException('File uploads are disabled for this demo.');
+    }
     if (!file) {
       throw new BadRequestException('No file provided');
     }

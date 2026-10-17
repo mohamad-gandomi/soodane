@@ -1,0 +1,5 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": "nestjs",
+  "buildCommand": "pnpm prisma:generate && node scripts/bootstrap-demo.cjs && node scripts/prepare-vercel.cjs && pnpm build"
+}
