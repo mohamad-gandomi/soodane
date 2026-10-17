@@ -11,7 +11,7 @@ async function main() {
   if (url.pathname !== '/soodane_demo') {
     throw new Error('Demo setup is restricted to the separate soodane_demo database');
   }
-  run(['exec', 'prisma', 'db', 'push', '--skip-generate', '--skip-seed']);
+  run(['exec', 'prisma', 'db', 'push', '--skip-generate']);
   const { PrismaClient } = require('@prisma/client');
   const prisma = new PrismaClient();
   let empty;
