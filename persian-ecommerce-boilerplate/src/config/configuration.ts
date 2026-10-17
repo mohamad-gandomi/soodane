@@ -16,6 +16,7 @@ export default () => ({
     expiresIn: process.env.JWT_EXPIRES_IN || '7d',
   },
   upload: {
+    enabled: parseBool(process.env.FEATURE_UPLOADS, true),
     dir: process.env.UPLOAD_DIR || './uploads',
     maxSizeMb: parseInt(process.env.MAX_FILE_SIZE_MB || '5', 10),
   },

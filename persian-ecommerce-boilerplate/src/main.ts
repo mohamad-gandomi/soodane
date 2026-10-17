@@ -39,11 +39,13 @@ async function bootstrap() {
   app.useGlobalFilters(new AllExceptionsFilter());
   app.useGlobalInterceptors(new TransformInterceptor());
 
-  const uploadDir = path.resolve(process.cwd(), configService.get<string>('upload.dir', './uploads'));
-  if (!fs.existsSync(uploadDir)) {
-    fs.mkdirSync(uploadDir, { recursive: true });
+  if (configService.get<boolean>('upload.enabled', true)) {
+    const uploadDir = path.resolve(process.cwd(), configService.get<string>('upload.dir', './uploads'));
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
+    app.useStaticAssets(uploadDir, { prefix: '/uploads/' });
   }
-  app.useStaticAssets(uploadDir, { prefix: '/uploads/' });
 
   const swaggerConfig = new DocumentBuilder()
     .setTitle('E-Commerce Shop API')
