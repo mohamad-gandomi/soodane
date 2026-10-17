@@ -1,0 +1,11 @@
+{
+  "name": "سودانه - فروشگاه و سیستم پاداش",
+  "short_name": "سودانه",
+  "description": "فروشگاه آنلاین سودانه با پاداش خرید و معرفی مستقیم",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f4f6f5",
+  "theme_color": "#17815a",
+  "dir": "rtl",
+  "lang": "fa"
+}

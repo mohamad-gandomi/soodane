@@ -1,0 +1,54 @@
+@import './fonts.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --sn-green: #17815a;
+  --sn-deep: #0f6847;
+  --sn-pale: #eff8f3;
+  --sn-text: #263a30;
+  --sn-muted: #77867e;
+  --sn-line: #e0e8e3;
+  --sn-bg: #f4f6f5;
+  --sn-danger: #bd5a5a;
+  --radius: 13px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  background-color: var(--sn-bg);
+  color: var(--sn-text);
+  font-family: IRANSansXFaNum, IRANSansX, IRANSans, Tahoma, Arial, sans-serif;
+  font-variant-numeric: proportional-nums;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  direction: rtl;
+}
+
+input,
+button,
+select,
+textarea {
+  font-family: inherit;
+}
+
+/* Hide scrollbars for clean mobile presentation */
+.scrollbar-none {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+
+/* Subtle mobile touch active states */
+button, a {
+  -webkit-tap-highlight-color: transparent;
+}

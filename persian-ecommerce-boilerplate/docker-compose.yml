@@ -1,0 +1,22 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: sodaneh-postgres
+    restart: always
+    environment:
+      POSTGRES_USER: sodaneh_user
+      POSTGRES_PASSWORD: sodaneh_password
+      POSTGRES_DB: sodaneh_db
+    ports:
+      - "5434:5432"
+    volumes:
+      - sodaneh_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sodaneh_user -d sodaneh_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  sodaneh_pgdata:
+    driver: local
