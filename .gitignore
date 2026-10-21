@@ -15,14 +15,13 @@ coverage/
 !.env.*.example
 *.pem
 *.key
-.pnp.*
 .vercel/
 .config/
 
-# Local uploads
+# Runtime media
 uploads/
 
-# Editor and operating system files
+# Editor and OS files
 .vscode/
 .idea/
 .DS_Store

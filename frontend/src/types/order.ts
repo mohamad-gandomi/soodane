@@ -50,6 +50,8 @@ export interface Order {
   paymentMethod: 'ONLINE' | 'CARD_TO_CARD' | 'WALLET' | 'CASH_ON_DELIVERY';
   subtotal: number;
   discountAmount: number;
+  taxAmount: number;
+  currency: string;
   shippingAmount: number;
   walletAmountPaid: number;
   totalAmount: number;
@@ -67,16 +69,12 @@ export interface CreateOrderPayload {
   customerEmail?: string;
   shippingAddress: ShippingAddressData;
   shippingMethod?: string;
-  shippingMethodId?: string;
-  shippingAmount: number;
   paymentMethod: string;
   useWalletBalance?: boolean;
-  walletAmountToUse?: number;
   referralCode?: string;
   items: {
     productId: string;
     variantId?: string;
     quantity: number;
-    unitPrice: number;
   }[];
 }

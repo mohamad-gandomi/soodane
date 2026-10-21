@@ -15,7 +15,7 @@ import { AddressSelectorSheet } from '@/components/shared/address-selector-sheet
 import { Button } from '@/components/ui/button';
 import { useCart } from '@/context/cart-context';
 import { useAuth } from '@/context/auth-context';
-import { ordersService } from '@/services/orders.service';
+import { ordersService, checkoutKey, ShippingMethod, PaymentGateway } from '@/services/orders.service';
 import { addressesService } from '@/services/addresses.service';
 import { walletService } from '@/services/wallet.service';
 import { formatMoney } from '@/lib/utils';
@@ -25,6 +25,7 @@ import { toast } from 'sonner';
 
 export default function CheckoutPage() {
   const router = useRouter();
+
   const { user } = useAuth();
   const { items, subtotal, clearCart } = useCart();
 
@@ -32,7 +33,11 @@ export default function CheckoutPage() {
   const [userAddresses, setUserAddresses] = useState<Address[]>([]);
   const [walletBalance, setWalletBalance] = useState(0);
   const [isAddressSheetOpen, setIsAddressSheetOpen] = useState(false);
-  const [shippingCost, setShippingCost] = useState(20000);
+  const [shippingMethods, setShippingMethods] = useState<ShippingMethod[]>([]);
+  const [shippingId, setShippingId] = useState('');
+  const [gateways, setGateways] = useState<PaymentGateway[]>([]);
+  const selectedShipping = shippingMethods.find(method => method.id === shippingId);
+  const shippingCost = selectedShipping ? Number(selectedShipping.price) : 0;
   const [useReward, setUseReward] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethodType>('online');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -40,7 +45,14 @@ export default function CheckoutPage() {
   useEffect(() => {
     async function initCheckout() {
       // Load real user addresses
-      const addrList = await addressesService.getAddresses();
+      const [addrList, wb, methods, availableGateways] = await Promise.all([
+        addressesService.getAddresses(), walletService.getBalance(),
+        ordersService.getShippingMethods(), ordersService.getGateways(),
+      ]);
+      const localMethods = methods.filter(method => method.currency === 'IRT');
+      setShippingMethods(localMethods);
+      setShippingId(localMethods[0]?.id || '');
+      setGateways(availableGateways);
       setUserAddresses(addrList);
       if (addrList.length > 0) {
         const stored = storage.getSelectedAddress();
@@ -57,17 +69,21 @@ export default function CheckoutPage() {
       }
 
       // Load real wallet balance
-      const wb = await walletService.getBalance();
-      setWalletBalance(wb.balance);
+      setWalletBalance(wb.currency === 'IRT' ? wb.balance : 0);
     }
-    initCheckout();
+    initCheckout().catch(() => toast.error('دریافت اطلاعات سفارش ناموفق بود. صفحه را دوباره باز کنید.'));
   }, []);
 
-  const totalBeforeReward = subtotal + shippingCost;
+  // Display estimate for the current official core; the API calculates the final amount.
+  const estimatedTax = Math.round(subtotal * 0.08 * 100) / 100;
+  const totalBeforeReward = subtotal + shippingCost + estimatedTax;
   const rewardDiscount = useReward ? Math.min(walletBalance, totalBeforeReward) : 0;
   const grandTotal = Math.max(0, totalBeforeReward - rewardDiscount);
 
   const handlePlaceOrder = async () => {
+    if (isSubmitting) return;
+    if (!user) { router.push('/auth'); return; }
+    if (!selectedShipping) { toast.error('یک روش ارسال معتبر انتخاب کنید.'); return; }
     if (!address) {
       toast.error('لطفاً ابتدا آدرس تحویل سفارش را ثبت یا انتخاب کنید.');
       setIsAddressSheetOpen(true);
@@ -83,36 +99,53 @@ export default function CheckoutPage() {
     try {
       const customerName =
         `${user?.firstName || ''} ${user?.lastName || ''}`.trim() || 'مشتری';
-      const customerPhone = user?.phone || '09121234567';
+      const deliveryAddress = userAddresses.find(item => item.street === address);
+      if (!deliveryAddress) throw new Error('آدرس انتخاب‌شده معتبر نیست.');
+      const customerPhone = deliveryAddress.phone || user.phone;
+      if (!customerPhone) throw new Error('شماره تماس را در نشانی تکمیل کنید.');
+      const gateway = paymentMethod === 'online'
+        ? gateways.find(item => item.type !== 'OFFLINE' && item.currencies.includes('IRT'))?.id
+        : gateways.find(item => item.id === 'BANK_TRANSFER')?.id;
+      if (grandTotal > 0 && !gateway) throw new Error('روش پرداخت انتخاب‌شده در دسترس نیست.');
 
-      const order = await ordersService.createOrder({
+      const payload = {
         customerName,
         customerPhone,
+        customerEmail: user.email,
         shippingAddress: {
-          recipientName: customerName,
+          recipientName: deliveryAddress.recipientName,
           phone: customerPhone,
-          street: address,
-          city: 'تهران',
-          province: 'تهران',
-          postalCode: '1111111111',
+          street: deliveryAddress.street,
+          city: deliveryAddress.city,
+          province: deliveryAddress.province,
+          postalCode: deliveryAddress.postalCode,
         },
-        shippingAmount: shippingCost,
-        shippingMethod: shippingCost === 20000 ? 'ارسال عادی' : 'ارسال سریع',
+        shippingMethod: selectedShipping.id,
         paymentMethod: grandTotal === 0 ? 'WALLET' : (paymentMethod === 'online' ? 'ONLINE' : 'CARD_TO_CARD'),
         useWalletBalance: useReward,
-        walletAmountToUse: rewardDiscount,
         items: items.map((i) => ({
           productId: i.product.id,
           quantity: i.quantity,
-          unitPrice: i.product.price ?? 0,
         })),
-      });
+      };
+      const fingerprint = JSON.stringify({ userId: user?.id, payload });
+      const order = await ordersService.createOrder(payload, checkoutKey(fingerprint));
+      if (order.paymentStatus !== 'PAID') {
+        if (!gateway) throw new Error('سفارش ثبت شد؛ روش پرداخت را انتخاب کنید.');
+        const payment = await ordersService.initiatePayment(order.id, gateway);
+        if (!payment.success || !payment.paymentUrl) throw new Error('سفارش ثبت شد؛ برای ادامه پرداخت دوباره تلاش کنید.');
+        clearCart();
+        sessionStorage.removeItem('soodane.checkout');
+        window.location.assign(payment.paymentUrl);
+        return;
+      }
+      sessionStorage.removeItem('soodane.checkout');
 
       clearCart();
       toast.success(`سفارش شماره ${order.orderNumber} با موفقیت ثبت شد!`);
       router.push('/orders');
-    } catch {
-      toast.error('خطا در ثبت سفارش. لطفاً دوباره تلاش کنید.');
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'خطا در ثبت سفارش. لطفاً دوباره تلاش کنید.');
     } finally {
       setIsSubmitting(false);
     }
@@ -158,7 +191,9 @@ export default function CheckoutPage() {
       {/* Delivery Method Picker */}
       <DeliveryMethodPicker
         selectedCost={shippingCost}
-        onSelect={(cost) => setShippingCost(cost)}
+        selectedId={shippingId}
+        options={shippingMethods.map(method => ({ id: method.id, title: method.name, cost: Number(method.price), description: method.estimatedDays || '' }))}
+        onSelect={(_cost, id) => setShippingId(id || '')}
       />
 
       {/* Wallet Reward Toggle */}
@@ -211,6 +246,9 @@ export default function CheckoutPage() {
             </b>
           </div>
 
+          <div className="flex justify-between text-[#77867e]">
+            <span>مالیات برآوردی</span><b>{formatMoney(estimatedTax)}</b>
+          </div>
           {useReward && rewardDiscount > 0 && (
             <div className="flex justify-between text-sn-green font-bold">
               <span>استفاده از پاداش</span>
@@ -240,7 +278,7 @@ export default function CheckoutPage() {
 
         <Button
           onClick={handlePlaceOrder}
-          disabled={isSubmitting || items.length === 0}
+          disabled={isSubmitting || items.length === 0 || !selectedShipping}
           className="flex-1 h-[48px] rounded-[10px] bg-sn-green hover:bg-[#116949] text-white font-bold text-[13px] shadow-none"
         >
           {isSubmitting

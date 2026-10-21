@@ -88,3 +88,8 @@ pnpm start
 NEXT_PUBLIC_API_URL=http://localhost:4000/api/v1
 ```
 سرویس‌های فرانت‌اند به‌طور مستقیم با ماژول‌های `auth`، `products`، `orders`، `wallet`، `referrals` و `users` بک‌اند `persian-ecommerce-boilerplate` هماهنگ هستند.
+
+
+## اجرای سودانه با کور مستقل
+
+راهنمای نصب، سه سرویس، تنظیمات خصوصی و معماری وابستگی‌ها: [docs/CORE_INTEGRATION.fa.md](docs/CORE_INTEGRATION.fa.md). فایل‌های استقرار سودانه در deploy/ قرار دارند.

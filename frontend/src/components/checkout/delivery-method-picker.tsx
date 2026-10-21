@@ -3,6 +3,7 @@ import { formatMoney } from '@/lib/utils';
 import { cn } from '@/lib/utils';
 
 export interface ShippingOption {
+  id?: string;
   cost: number;
   title: string;
   description: string;
@@ -15,12 +16,14 @@ export const DEFAULT_SHIPPING_OPTIONS: ShippingOption[] = [
 
 interface DeliveryMethodPickerProps {
   selectedCost: number;
-  onSelect: (cost: number) => void;
+  selectedId?: string;
+  onSelect: (cost: number, id?: string) => void;
   options?: ShippingOption[];
 }
 
 export function DeliveryMethodPicker({
   selectedCost,
+  selectedId,
   onSelect,
   options = DEFAULT_SHIPPING_OPTIONS,
 }: DeliveryMethodPickerProps) {
@@ -33,12 +36,12 @@ export function DeliveryMethodPicker({
 
       <div className="flex flex-col gap-2">
         {options.map((opt) => {
-          const isSelected = selectedCost === opt.cost;
+          const isSelected = selectedId ? selectedId === opt.id : selectedCost === opt.cost;
           return (
             <button
-              key={opt.title}
+              key={opt.id || opt.title}
               type="button"
-              onClick={() => onSelect(opt.cost)}
+              onClick={() => onSelect(opt.cost, opt.id)}
               className={cn(
                 'relative flex items-center justify-between p-3 rounded-[10px] border border-sn-line bg-white text-right transition-colors cursor-pointer',
                 isSelected && 'border-[#9fd0b5] bg-[#fbfefc]'

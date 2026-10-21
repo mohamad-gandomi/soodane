@@ -1,3 +1,4 @@
+import { formatOrderNumber } from '@/lib/utils';
 import React from 'react';
 import Link from 'next/link';
 import { Order } from '@/types/order';
@@ -69,7 +70,7 @@ export function OrderCard({ order }: OrderCardProps) {
       <div className="flex items-start justify-between">
         <div>
           <b className="text-[13.5px] font-black text-sn-text">
-            سفارش #{toFa(order.orderNumber)}
+            سفارش #{formatOrderNumber(order.orderNumber)}
           </b>
           <p className="text-[10px] text-[#86958e] mt-0.5">
             {formattedDate} · {toFa(order.items.length)} کالا

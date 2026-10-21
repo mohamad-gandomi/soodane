@@ -1,5 +1,7 @@
 'use client';
 
+import { formatOrderNumber } from '@/lib/utils';
+
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
@@ -79,8 +81,8 @@ export default function OrderDetailPage() {
   }
 
   // Format creation date and time
-  let orderDateStr = '۲۵ شهریور ۱۴۰۵';
-  let orderTimeStr = '۱۷:۲۹';
+  let orderDateStr = '—';
+  let orderTimeStr = '—';
   if (order.createdAt) {
     const d = new Date(order.createdAt);
     if (!isNaN(d.getTime())) {
@@ -139,7 +141,7 @@ export default function OrderDetailPage() {
         <div className="flex items-start justify-between">
           <div>
             <b className="text-[14px] font-black text-sn-text block">
-              سفارش #{toFa(order.orderNumber)}
+              سفارش #{formatOrderNumber(order.orderNumber)}
             </b>
             <p className="text-[9.5px] text-[#86958e] mt-0.5">
               ثبت‌شده {orderDateStr}، ساعت {orderTimeStr}
@@ -263,7 +265,7 @@ export default function OrderDetailPage() {
         <div className="p-4 rounded-[16px] bg-white border border-sn-line/60 shadow-none space-y-2 text-[11px]">
           <div className="flex justify-between items-center text-[#6e7d75]">
             <span>جمع کالاها</span>
-            <span className="font-bold text-sn-text">{toFa(order.subtotal || 654000)} تومان</span>
+            <span className="font-bold text-sn-text">{toFa(order.subtotal ?? 0)} تومان</span>
           </div>
 
           {order.discountAmount > 0 && (
@@ -282,9 +284,13 @@ export default function OrderDetailPage() {
 
           <div className="flex justify-between items-center text-[#6e7d75]">
             <span>هزینه ارسال</span>
-            <span className="font-bold text-sn-text">{toFa(order.shippingAmount || 20000)} تومان</span>
+            <span className="font-bold text-sn-text">{toFa(order.shippingAmount ?? 0)} تومان</span>
           </div>
 
+          <div className="flex justify-between items-center text-[#6e7d75]">
+            <span>مالیات</span>
+            <span className="font-bold text-sn-text">{toFa(order.taxAmount ?? 0)} تومان</span>
+          </div>
           <div className="flex justify-between items-center border-t border-[#edf1ee] pt-2.5 mt-2">
             <span className="font-bold text-sn-text">مبلغ قابل پرداخت</span>
             <span className="text-[14px] font-black text-sn-text">
@@ -304,8 +310,8 @@ export default function OrderDetailPage() {
         </button>
       </section>
 
-      {/* 5. Order Reward Banner (پاداش این سفارش) */}
-      <section className="mb-4">
+      {/* Only show a reward amount actually returned for this paid order. */}
+      {totalCashback > 0 && order.paymentStatus === 'PAID' && <section className="mb-4">
         <h2 className="text-[13px] font-bold text-sn-text mb-2 px-1">
           پاداش این سفارش
         </h2>
@@ -313,7 +319,7 @@ export default function OrderDetailPage() {
         <div className="p-3.5 rounded-[14px] bg-[#edf8f2] border border-[#d8ebe0] flex items-center justify-between gap-3">
           <div className="text-right">
             <b className="block text-[12px] font-bold text-sn-green">
-              {toFa(totalCashback || 36000)} تومان پاداش فعال شد
+              {toFa(totalCashback)} تومان پاداش فعال شد
             </b>
             <p className="text-[9.5px] text-[#556960] mt-0.5">
               پاداش خرید این سفارش پس از تایید پرداخت به کیف پول شما اضافه شد.
@@ -324,7 +330,7 @@ export default function OrderDetailPage() {
             <Gift size={20} />
           </div>
         </div>
-      </section>
+      </section>}
 
       {/* 6. Support Button (نیاز به پشتیبانی دارم) */}
       <Link href="/support" className="block mt-4">

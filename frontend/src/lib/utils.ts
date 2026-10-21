@@ -41,3 +41,8 @@ export function calculateDiscount(price: number, oldPrice?: number | null): numb
   if (!oldPrice || oldPrice <= price) return 0;
   return Math.round(((oldPrice - price) / oldPrice) * 100);
 }
+
+// Order numbers can contain letters and UUIDs; preserve their full identity.
+export function formatOrderNumber(value: string): string {
+  return String(value).replace(/\d/g, digit => "۰۱۲۳۴۵۶۷۸۹"[Number(digit)]);
+}
