@@ -2,7 +2,6 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
 export function middleware(request: NextRequest) {
-  const url = request.nextUrl.clone();
   const host = request.headers.get('host') || '';
 
   // Extract hostname without port (e.g., example.com, app.example.com, localhost)
@@ -28,7 +27,7 @@ export function middleware(request: NextRequest) {
     hostname === appDomain ||
     hostname === 'app.localhost';
 
-  const pathname = url.pathname;
+  const pathname = request.nextUrl.pathname;
 
   // 1. Static files, assets, API routes, and Next.js internals pass through
   if (
@@ -42,12 +41,7 @@ export function middleware(request: NextRequest) {
 
   // 2. Routing when accessing example.com (Landing & Blog)
   if (isLandingHost) {
-    // Root URL '/' renders the Landing Page
-    if (pathname === '/') {
-      url.pathname = '/landing';
-      return NextResponse.rewrite(url);
-    }
-
+    // The homepage uses the internal rewrite in next.config.mjs.
     // Blog is served natively on example.com
     if (pathname.startsWith('/blog')) {
       return NextResponse.next();

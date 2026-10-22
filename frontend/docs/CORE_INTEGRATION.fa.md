@@ -127,3 +127,25 @@ curl -fsS --max-time 15 -H 'Host: api.sodaneh.ir' -o /dev/null -w 'API via Nginx
 ```
 
 هر چهار پاسخ باید 200 باشد. قبل از HTTPS، وارد داشبورد نشوید؛ فرانت با آدرس HTTPS API ساخته شده است. پس از انتشار DNS و تأیید دسترسی عمومی پورت 80، صدور گواهی برای هر پنج نام و تست تمدید خودکار مرحلهٔ بعد است. فعال‌سازی CDN بعداً نیازمند بازبینی SSL مبدأ، کش مسیرهای خصوصی، SSE و اعتماد به IP پراکسی است.
+
+### HTTPS و بازنویسی لندینگ
+
+پس از انتشار DNS و تأیید HTTP، گواهی با بسته‌های certbot و python3-certbot-nginx و دستور certbot --nginx --redirect --cert-name sodaneh.ir برای پنج نام sodaneh.ir، www.sodaneh.ir، app.sodaneh.ir، dashboard.sodaneh.ir و api.sodaneh.ir نصب شد. فایل زندهٔ /etc/nginx/sites-available/sodaneh.conf توسط Certbot تنظیم می‌شود؛ قالب HTTP مخزن را دوباره روی آن کپی نکنید. برای بررسی تمدید، روی سرور certbot renew --dry-run و systemctl list-timers --all certbot.timer اجرا شود؛ موفقیت این بررسی باید جداگانه تأیید شود.
+
+Next 14 هنگام بازنویسی middleware، آدرس loopback را از 127.0.0.1 به localhost نرمال می‌کند. پشت HTTPS، بازنویسی صفحهٔ اصلی به اتصال خارجی https://localhost:3000/landing تبدیل می‌شد و خطای EPROTO می‌داد. اکنون بازنویسی ریشه به /landing در beforeFiles تنظیمات Next، با شرط دامنه، داخلی انجام می‌شود؛ middleware فقط هدایت مسیرهای فروشگاه و بلاگ را انجام می‌دهد. دامنهٔ www، landing.localhost و پیش‌نمایش __domain=landing حفظ شده‌اند.
+
+آزمون pnpm --dir frontend test:routing روی build واقعی production، یک سرور موقت روی loopback با پورت آزاد اجرا می‌کند و HTTP و هدرهای HTTPS مشابه Nginx را بررسی می‌کند. پیش از این آزمون، build باید با تنظیمات عمومی sodaneh.ir ساخته شده باشد. این آزمون جای بررسی گواهی واقعی TLS یا خرید و ورود را نمی‌گیرد؛ درخواست پرداخت یا پیامک ارسال نمی‌کند.
+
+برای انتشار اصلاح فرانت روی این استقرار تازه، فرانت در زمان ساخت چند دقیقه در دسترس نیست:
+
+```sh
+cd /opt/soodane &&
+git pull --ff-only &&
+systemctl stop sodaneh-storefront &&
+cd /opt/soodane/frontend &&
+NODE_OPTIONS="--max-old-space-size=1536" pnpm build &&
+chown --recursive --no-dereference sodaneh-app:sodaneh-app /opt/soodane/frontend/.next &&
+systemctl start sodaneh-storefront
+```
+
+اگر ساخت خطا بدهد، این زنجیره متوقف می‌شود و سرویس فرانت تا رفع خطا خاموش می‌ماند. این دستور برای مرحلهٔ راه‌اندازی نخست است؛ انتشارهای فروشگاه فعال باید با build جداگانه و امکان بازگشت به نسخهٔ قبلی انجام شوند. API، داشبورد، دیتابیس و تنظیم گواهی در این مرحله بازسازی نمی‌شوند.
