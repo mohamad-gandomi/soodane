@@ -39,3 +39,20 @@ package.json و lockfile هر بخش، مرجع نسخه‌های همان بخ�
 ## استقرار
 
 قالب Nginx و نمونه تنظیمات در frontend/deploy هستند. این فایل‌ها متعلق به استقرار سودانه‌اند و در کور قرار نمی‌گیرند. دامنه اصلی sodaneh.ir برای لندینگ و بلاگ، app.sodaneh.ir برای فروشگاه، dashboard.sodaneh.ir برای داشبورد و api.sodaneh.ir برای API است. فایل‌های استقرار هنوز روی آروان تست نشده‌اند.
+
+### دیتابیس سرور
+
+برای دیتابیس تازهٔ سرور از compose.production.yml استفاده کنید؛ compose.local.yml مخصوص محیط محلی است.
+
+```sh
+cd /opt/soodane
+node frontend/deploy/init-database-env.cjs
+docker compose -f frontend/deploy/compose.production.yml up -d --wait --wait-timeout 120
+docker compose -f frontend/deploy/compose.production.yml ps
+```
+
+اسکریپت یک رمز تصادفی در frontend/deploy/.env.database با دسترسی 600 می‌سازد و اجرای دوباره، فایل موجود را حفظ می‌کند. این فایل خصوصی و خارج از گیت است؛ از آن نسخهٔ امن نگه دارید و پس از ساخته‌شدن دیتابیس حذف یا دوباره تولیدش نکنید. تغییر متغیر رمز در این فایل، رمز کاربر دیتابیس موجود را تغییر نمی‌دهد.
+
+PostgreSQL روی 127.0.0.1:5434 در دسترس برنامه‌های همین سرور است. داده‌ها در volume پایدار sodaneh-production_postgres_data ذخیره می‌شوند؛ راه‌اندازی مجدد کانتینر داده‌ها را نگه می‌دارد. دستور down -v داده‌ها را حذف می‌کند و برای سرور استفاده نشود. پیش از بهره‌برداری، پشتیبان‌گیری مستقل از دیتابیس لازم است؛ volume جای بکاپ را نمی‌گیرد.
+
+این مرحله فقط PostgreSQL را آماده می‌کند. سپس DATABASE_URL خصوصی API با همین اطلاعات ساخته می‌شود و migrationهای رسمی کور با pnpm prisma:deploy اجرا می‌شوند. برای ساختار اولیهٔ production از seed یا reset استفاده نشود.
