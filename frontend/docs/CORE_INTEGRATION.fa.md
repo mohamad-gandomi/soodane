@@ -97,3 +97,33 @@ curl --fail --silent --show-error -H 'Host: app.sodaneh.ir' -o /dev/null -w 'Sto
 ```
 
 وضعیت active فقط اجرای process را نشان می‌دهد؛ پاسخ‌های HTTP هم باید بررسی شوند. در صورت خطا، journalctl -u sodaneh-api -n 50 --no-pager یا نام سرویس مربوط را بررسی کنید. سرویس‌ها پس از reboot بالا می‌آیند و در صورت خروج process دوباره شروع می‌شوند؛ این تنظیم به‌تنهایی آزمون سلامت یا تست خرید نیست. برای انتشار نسخه بعد، پس از دریافت کد، نصب، migration و ساخت موفق، نصب‌کننده را دوباره اجرا کنید تا مالکیت فایل‌های جدید build تنظیم و سرویس‌ها restart شوند. هنوز Nginx، DNS و HTTPS باید جداگانه تنظیم و آزمایش شوند.
+
+### اتصال دامنه و Nginx
+
+در DNS آروان، پنج رکورد A با نام‌های @، www، app، dashboard و api به IPv4 سرور 37.32.37.59 اشاره کنند. برای راه‌اندازی اولیه، پروکسی/CDN این رکوردها غیرفعال باشد تا اتصال مستقیم و HTTPS مبدأ آزمایش شود. Nameserverها باید مطابق همان zone آروان باشند. برای هر نام، رکورد متعارض CNAME یا AAAA به مقصد دیگر باقی نماند؛ رکوردهای ایمیل تغییر نکنند.
+
+برای نصب اولیهٔ قالب HTTP در همین سرور تازه:
+
+```sh
+cd /opt/soodane &&
+git pull --ff-only &&
+test ! -e /etc/nginx/sites-available/sodaneh.conf &&
+test ! -L /etc/nginx/sites-available/sodaneh.conf &&
+test ! -e /etc/nginx/sites-enabled/sodaneh.conf &&
+test ! -L /etc/nginx/sites-enabled/sodaneh.conf &&
+install -m 644 frontend/deploy/nginx/soodaneh-multidomain.conf /etc/nginx/sites-available/sodaneh.conf &&
+ln -s /etc/nginx/sites-available/sodaneh.conf /etc/nginx/sites-enabled/sodaneh.conf &&
+nginx -t &&
+systemctl reload nginx
+```
+
+این دستور فایل موجود را بازنویسی نمی‌کند و سرویس پیش‌فرض یا سایت دیگری را حذف نمی‌کند. اگر nginx -t خطا داد، reload انجام نمی‌شود؛ خطا و فایل‌های تازه را بررسی کنید. پیش از تلاش دوباره، وضعیت فایل‌های موجود روشن شود. پس از نصب HTTPS، قالب HTTP دوباره روی فایل زنده کپی نشود چون تنظیمات گواهی را حذف می‌کند.
+
+```sh
+curl -fsS --max-time 15 -H 'Host: sodaneh.ir' -o /dev/null -w 'Landing via Nginx: %{http_code}\n' http://127.0.0.1/
+curl -fsS --max-time 15 -H 'Host: app.sodaneh.ir' -o /dev/null -w 'Storefront via Nginx: %{http_code}\n' http://127.0.0.1/
+curl -fsS --max-time 15 -H 'Host: dashboard.sodaneh.ir' -o /dev/null -w 'Dashboard via Nginx: %{http_code}\n' http://127.0.0.1/login
+curl -fsS --max-time 15 -H 'Host: api.sodaneh.ir' -o /dev/null -w 'API via Nginx: %{http_code}\n' http://127.0.0.1/api/docs-json
+```
+
+هر چهار پاسخ باید 200 باشد. قبل از HTTPS، وارد داشبورد نشوید؛ فرانت با آدرس HTTPS API ساخته شده است. پس از انتشار DNS و تأیید دسترسی عمومی پورت 80، صدور گواهی برای هر پنج نام و تست تمدید خودکار مرحلهٔ بعد است. فعال‌سازی CDN بعداً نیازمند بازبینی SSL مبدأ، کش مسیرهای خصوصی، SSE و اعتماد به IP پراکسی است.
