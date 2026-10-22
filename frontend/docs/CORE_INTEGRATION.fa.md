@@ -79,10 +79,10 @@ prisma:deploy جدول‌ها را با migrationهای رسمی ایجاد می
 ```sh
 cd /opt/soodane
 apt install -y ufw &&
-ufw insert 1 allow 22/tcp &&
+ufw allow 22/tcp &&
 ufw allow 80/tcp &&
 ufw allow 443/tcp &&
-ufw insert 1 deny 4000/tcp &&
+ufw deny 4000/tcp &&
 ufw --force enable &&
 node frontend/deploy/install-services.cjs
 ```
