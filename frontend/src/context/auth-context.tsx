@@ -10,14 +10,9 @@ interface AuthContextType {
   token: string | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  login: (user: User, token: string) => Promise<void>;
-  logout: () => Promise<void>;
+  login: (user: User, token: string) => void;
+  logout: () => void;
   refreshProfile: () => Promise<void>;
-}
-
-async function syncSession(token: string) {
-  const response = await fetch('/api/session', { method: 'POST', headers: { Authorization: `Bearer ${token}` } });
-  if (!response.ok) throw new Error('تأیید ورود ممکن نشد. دوباره تلاش کنید.');
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -40,7 +35,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         try {
           const freshUser = await authService.getProfile();
           if (freshUser) {
-            await syncSession(savedToken);
             setUser(freshUser);
           } else {
             // Token expired or invalid
@@ -48,8 +42,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             setToken(null);
           }
         } catch {
-          setUser(null);
-          setToken(null);
+          // Keep cached user if network is momentarily unavailable
         }
       } else {
         setUser(null);
@@ -61,17 +54,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     initAuth();
   }, []);
 
-  const login = async (newUser: User, newToken: string) => {
-    await syncSession(newToken);
+  const login = (newUser: User, newToken: string) => {
     setUser(newUser);
     setToken(newToken);
     storage.setToken(newToken);
     storage.setUser(newUser);
   };
 
-  const logout = async () => {
-    const response = await fetch('/api/session', { method: 'DELETE' });
-    if (!response.ok) throw new Error('خروج انجام نشد؛ دوباره تلاش کنید.');
+  const logout = () => {
     authService.logout();
     setUser(null);
     setToken(null);

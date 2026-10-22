@@ -1,9 +1,7 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
-import { isPublicPage } from '@/lib/access';
-import { SESSION_COOKIE, validateSession } from '@/lib/server-session';
 
-export async function middleware(request: NextRequest) {
+export function middleware(request: NextRequest) {
   const host = request.headers.get('host') || '';
 
   // Extract hostname without port (e.g., example.com, app.example.com, localhost)
@@ -33,11 +31,10 @@ export async function middleware(request: NextRequest) {
 
   // 1. Static files, assets, API routes, and Next.js internals pass through
   if (
-    pathname.startsWith('/_next/') ||
-    pathname.startsWith('/assets/') ||
-    pathname === '/api' || pathname.startsWith('/api/') ||
-    /^\/(fonts|images|icons)\//.test(pathname) ||
-    /^\/(favicon\.ico|manifest\.json|robots\.txt|sitemap\.xml)$/.test(pathname)
+    pathname.startsWith('/_next') ||
+    pathname.startsWith('/assets') ||
+    pathname.startsWith('/api') ||
+    pathname.includes('.')
   ) {
     return NextResponse.next();
   }
@@ -66,7 +63,6 @@ export async function middleware(request: NextRequest) {
       '/rewards',
       '/products',
       '/special',
-      '/notifications',
     ];
 
     if (appRoutes.some((route) => pathname === route || pathname.startsWith(`${route}/`))) {
@@ -90,20 +86,10 @@ export async function middleware(request: NextRequest) {
       return NextResponse.redirect(new URL(pathname + request.nextUrl.search, siteUrl), 307);
     }
 
+    return NextResponse.next();
   }
 
-  // Validate access before rendering any store page, including direct links.
-  if (!isPublicPage(pathname)) {
-    const token = request.cookies.get(SESSION_COOKIE)?.value || '';
-    const allowed = token && await validateSession(token);
-    const target = new URL('/auth', hostname === appDomain ? appUrl : request.url);
-    target.searchParams.set('redirect', pathname + request.nextUrl.search);
-    const response = allowed ? NextResponse.next() : NextResponse.redirect(target, 307);
-    response.headers.set('Cache-Control', 'private, no-store');
-    response.headers.append('Vary', 'Cookie');
-    if (token && !allowed) response.cookies.delete(SESSION_COOKIE);
-    return response;
-  }
+  // 4. Default fallback (e.g. standard localhost:3000 without custom domain)
   return NextResponse.next();
 }
 

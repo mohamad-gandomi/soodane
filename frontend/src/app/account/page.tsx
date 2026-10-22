@@ -38,20 +38,17 @@ export default function AccountPage() {
     });
   }, []);
 
-  const handleConfirmLogout = async () => {
+  const handleConfirmLogout = () => {
     setIsLoggingOut(true);
-    try {
-      await logout();
+    setTimeout(() => {
+      logout();
       setIsLogoutSheetOpen(false);
-      toast.info('از حساب کاربری خارج شدید.');
-      router.replace('/auth');
-      router.refresh();
-    } catch {
-      toast.error('خروج انجام نشد؛ دوباره تلاش کنید.');
-    } finally {
       setIsLoggingOut(false);
-    }
+      toast.info('از حساب کاربری خارج شدید.');
+      router.push('/auth');
+    }, 400);
   };
+
   const displayName = user
     ? `${user.firstName || ''} ${user.lastName || ''}`.trim() || 'کاربر گرامی'
     : 'کاربر مهمان';
