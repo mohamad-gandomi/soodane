@@ -1,0 +1,27 @@
+# Managed by Sodaneh deployment.
+[Unit]
+Description=Sodaneh storefront and public website
+After=network-online.target sodaneh-api.service
+Wants=network-online.target sodaneh-api.service
+
+[Service]
+Type=simple
+User=sodaneh-app
+Group=sodaneh-app
+WorkingDirectory=/opt/soodane/frontend
+Environment=NODE_ENV=production
+Environment=NEXT_TELEMETRY_DISABLED=1
+Environment=PATH=/usr/local/bin:/usr/bin:/bin
+ExecStart=/usr/local/bin/node /opt/soodane/frontend/node_modules/next/dist/bin/next start --hostname 127.0.0.1 --port 3000
+Restart=always
+RestartSec=5
+TimeoutStopSec=30
+UMask=0077
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+ReadWritePaths=/opt/soodane/frontend/.next
+
+[Install]
+WantedBy=multi-user.target
