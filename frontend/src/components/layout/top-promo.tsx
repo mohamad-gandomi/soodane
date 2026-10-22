@@ -5,7 +5,7 @@ export function TopPromo() {
   return (
     <Link
       href="/special"
-      className="block h-[60px] overflow-hidden bg-sn-deep leading-none relative group"
+      className="-mx-4 -mt-3.5 mb-3.5 block h-[60px] overflow-hidden bg-sn-deep leading-none relative group"
       aria-label="مشاهده تخفیف‌های ویژه"
     >
       <img

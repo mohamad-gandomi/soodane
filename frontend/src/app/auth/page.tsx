@@ -4,7 +4,6 @@ import React, { Suspense, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { AppShell } from '@/components/layout/app-shell';
-import { TopPromo } from '@/components/layout/top-promo';
 import { PhoneStep } from '@/components/auth/phone-step';
 import { OtpStep } from '@/components/auth/otp-step';
 import { ReferralStep } from '@/components/auth/referral-step';
@@ -241,7 +240,6 @@ function AuthFlow() {
 export default function AuthPage() {
   return (
     <AppShell hasBottomNav={false} className="pt-1">
-      <TopPromo />
       <div className="pt-2">
         <Suspense fallback={<div className="p-8 text-center text-sn-muted text-xs">در حال بارگذاری...</div>}>
           <AuthFlow />
