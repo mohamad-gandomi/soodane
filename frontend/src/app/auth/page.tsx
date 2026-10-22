@@ -1,6 +1,6 @@
 'use client';
 
-import React, { Suspense, useState } from 'react';
+import React, { Suspense, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { AppShell } from '@/components/layout/app-shell';
@@ -14,13 +14,14 @@ import { authService, toEnglishDigits } from '@/services/auth.service';
 import { referralService } from '@/services/referral.service';
 import { useAuth } from '@/context/auth-context';
 import { toast } from 'sonner';
+import { safeReturnPath } from '@/lib/access';
 
 type AuthStep = 0 | 1 | 2 | 3 | 4;
 
 function AuthFlow() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const redirectUrl = searchParams.get('redirect') || '/';
+  const redirectUrl = safeReturnPath(searchParams.get('redirect'));
 
   const [step, setStep] = useState<AuthStep>(0);
   const [phone, setPhone] = useState('');
@@ -33,7 +34,11 @@ function AuthFlow() {
   const [nationalId, setNationalId] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
-  const { login, user, refreshProfile } = useAuth();
+  const { login, user, refreshProfile, isAuthenticated, isLoading: authLoading } = useAuth();
+
+  useEffect(() => {
+    if (step === 0 && !authLoading && isAuthenticated) router.replace(redirectUrl);
+  }, [step, authLoading, isAuthenticated, router, redirectUrl]);
 
   // Send OTP handler
   const handleSendOtp = async () => {
@@ -65,14 +70,14 @@ function AuthFlow() {
     setIsLoading(true);
     try {
       const res = await authService.verifyOtp(phone, finalCode);
-      login(res.user, res.token);
+      await login(res.user, res.token);
 
       if (res.isNewUser) {
         toast.success('شماره شما با موفقیت تأیید شد.');
         setStep(2); // Go to referral step
       } else {
         toast.success(`${res.user.firstName || 'کاربر گرامی'}، خوش آمدید!`);
-        router.push(redirectUrl);
+        router.replace(redirectUrl);
       }
     } catch (err: any) {
       toast.error(err.message || 'کد وارد شده نامعتبر است');
@@ -120,7 +125,7 @@ function AuthFlow() {
   };
 
   const handleFinish = () => {
-    router.push(redirectUrl);
+    router.replace(redirectUrl);
   };
 
   const stepCount = 5;
