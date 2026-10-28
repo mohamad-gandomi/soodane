@@ -18,8 +18,15 @@ function BannerContent({ item, compact }: { item: BannerItem; compact: boolean }
       )}
       style={{ backgroundColor: item.backgroundColor || '#eaf6ef', color: item.textColor || '#284838' }}
     >
+      {composite && (
+        <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden">
+          <span className="absolute -left-8 -top-12 h-44 w-44 rounded-full border-[18px] border-current opacity-[0.08]" />
+          <span className="absolute -bottom-16 left-12 h-36 w-36 rounded-full border-[14px] border-white/50" />
+          <span className="absolute -right-10 -top-14 h-32 w-32 rounded-full bg-white/25" />
+        </div>
+      )}
       <picture className={cn(
-        composite ? 'order-2 block h-24 w-24 shrink-0' : 'block h-full w-full',
+        composite ? 'relative z-10 order-2 block h-24 w-24 shrink-0' : 'block h-full w-full',
         compact && composite && 'h-12 w-12'
       )}>
         {item.mobileImageUrl && <source media="(max-width: 640px)" srcSet={item.mobileImageUrl} />}
@@ -32,7 +39,7 @@ function BannerContent({ item, compact }: { item: BannerItem; compact: boolean }
       </picture>
       {hasText && (
         <div className={cn(
-          'min-w-0',
+          'relative z-10 min-w-0',
           !composite && 'absolute inset-0 flex flex-col justify-center bg-gradient-to-l from-black/65 to-transparent px-5 text-white',
           compact && !composite && 'px-4'
         )}>

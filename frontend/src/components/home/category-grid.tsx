@@ -73,7 +73,7 @@ export function CategoryGrid() {
                   {tag}
                 </span>
               )}
-              <div className="w-full aspect-square rounded-[16px] bg-[#f6f7f7] overflow-hidden flex items-center justify-center group-hover:bg-[#edf0ef] group-active:scale-95 transition-all">
+              <div className="w-full aspect-square rounded-[16px] border border-sn-line bg-[#f6f7f7] overflow-hidden flex items-center justify-center group-hover:bg-[#edf0ef] group-active:scale-95 transition-all">
                 {cat.image ? (
                   <img
                     src={cat.image}
@@ -100,7 +100,7 @@ export function CategoryGrid() {
           href="/products"
           className="relative flex flex-col items-center text-center group"
         >
-          <div className="w-full aspect-square rounded-[16px] bg-[#f6f7f7] overflow-hidden flex items-center justify-center group-hover:bg-[#edf0ef] group-active:scale-95 transition-all">
+          <div className="w-full aspect-square rounded-[16px] border border-sn-line bg-[#f6f7f7] overflow-hidden flex items-center justify-center group-hover:bg-[#edf0ef] group-active:scale-95 transition-all">
             <span className="text-[20px] font-bold text-[#5e6462] tracking-[2px] select-none pointer-events-none">
               •••
             </span>

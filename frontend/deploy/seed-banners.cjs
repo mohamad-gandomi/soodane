@@ -8,6 +8,7 @@ const { createRequire } = require('node:module');
 async function main() {
   const core = path.resolve(process.argv[2] || '../core');
   const backup = process.argv[3];
+  const refreshImages = process.argv.includes('--refresh-images');
   if (!backup) throw new Error('A private backup directory is required.');
   const backendRequire = createRequire(path.join(core, 'package.json'));
   const configRequire = createRequire(fs.realpathSync(path.join(core, 'node_modules/@nestjs/config/package.json')));
@@ -34,15 +35,30 @@ async function main() {
   for (const key of Object.keys(content)) before[key] = await api('/banners/admin/placements/' + key);
   fs.mkdirSync(backup, { recursive: true, mode: 0o700 });
   fs.writeFileSync(path.join(backup, 'banners-before-' + Date.now() + '.json'), JSON.stringify(before, null, 2), { mode: 0o600, flag: 'wx' });
-  for (const [key, items] of Object.entries(content)) {
+  const replacementImages = new Map(['oil', 'rice', 'tea'].map(name => [
+    'https://app.sodaneh.ir/assets/products/' + name + (name === 'rice' ? '.png' : '.jpg'),
+    'https://app.sodaneh.ir/assets/promotions/' + name + '-cutout.webp',
+  ]));
+  const fields = ['title', 'imageUrl', 'mobileImageUrl', 'altText', 'linkUrl', 'isActive', 'contentType', 'eyebrow', 'displayTitle', 'subtitle', 'buttonText', 'buttonUrl', 'backgroundColor', 'textColor'];
+  for (const [key, initialItems] of Object.entries(content)) {
     const current = before[key];
-    if (current.items.length > 0) { console.log(key + ': preserved existing content'); continue; }
+    let items = initialItems;
+    if (refreshImages) {
+      items = current.items.map(item => {
+        const input = Object.fromEntries(fields.filter(field => item[field] !== undefined).map(field => [field, item[field]]));
+        input.imageUrl = replacementImages.get(item.imageUrl) || item.imageUrl;
+        input.mobileImageUrl = replacementImages.get(item.mobileImageUrl) || item.mobileImageUrl;
+        return input;
+      });
+      const changed = items.some((item, index) => item.imageUrl !== current.items[index].imageUrl || item.mobileImageUrl !== current.items[index].mobileImageUrl);
+      if (!changed) { console.log(key + ': no image changes needed'); continue; }
+    } else if (current.items.length > 0) { console.log(key + ': preserved existing content'); continue; }
     await api('/banners/admin/placements/' + key, {
       method: 'PUT',
       body: JSON.stringify({ version: current.version, configRevision: current.configRevision, items }),
     });
     const published = await api('/banners/' + key);
-    if (published.items.length !== items.length) throw new Error('Published count mismatch for ' + key);
+    if (published.items.length !== items.filter(item => item.isActive).length) throw new Error('Published count mismatch for ' + key);
     console.log(key + ': published ' + published.items.length + ' items');
   }
 }
