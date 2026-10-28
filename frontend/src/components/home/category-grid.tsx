@@ -40,7 +40,9 @@ export function CategoryGrid() {
     async function fetchCategories() {
       try {
         const data = await categoriesService.getCategories();
-        setCategories(data);
+        setCategories(data.filter(category => !category.parentId));
+      } catch {
+        setCategories([]);
       } finally {
         setLoading(false);
       }
@@ -63,7 +65,7 @@ export function CategoryGrid() {
           return (
             <Link
               key={cat.id || cat.slug}
-              href={`/products?category=${cat.slug}`}
+              href={`/products?category=${encodeURIComponent(cat.slug)}`}
               className="relative flex flex-col items-center text-center group"
             >
               {tag && (
@@ -71,12 +73,13 @@ export function CategoryGrid() {
                   {tag}
                 </span>
               )}
-              <div className="w-full aspect-square rounded-[16px] bg-[#f6f7f7] flex items-center justify-center group-hover:bg-[#edf0ef] group-active:scale-95 transition-all">
+              <div className="w-full aspect-square rounded-[16px] bg-[#f6f7f7] overflow-hidden flex items-center justify-center group-hover:bg-[#edf0ef] group-active:scale-95 transition-all">
                 {cat.image ? (
                   <img
                     src={cat.image}
-                    alt={`آیکون دسته‌بندی ${cat.name}`}
-                    className="h-[36px] w-[36px] object-contain drop-shadow-sm select-none pointer-events-none"
+                    alt={cat.name}
+                    loading="lazy"
+                    className="h-full w-full object-cover select-none pointer-events-none"
                     onError={(e) => {
                       (e.target as HTMLElement).style.display = 'none';
                     }}
@@ -97,7 +100,7 @@ export function CategoryGrid() {
           href="/products"
           className="relative flex flex-col items-center text-center group"
         >
-          <div className="w-full aspect-square rounded-[16px] bg-[#f6f7f7] flex items-center justify-center group-hover:bg-[#edf0ef] group-active:scale-95 transition-all">
+          <div className="w-full aspect-square rounded-[16px] bg-[#f6f7f7] overflow-hidden flex items-center justify-center group-hover:bg-[#edf0ef] group-active:scale-95 transition-all">
             <span className="text-[20px] font-bold text-[#5e6462] tracking-[2px] select-none pointer-events-none">
               •••
             </span>

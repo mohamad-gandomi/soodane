@@ -4,10 +4,11 @@ import React, { useState, useEffect } from 'react';
 import { Sheet } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { CATEGORY_NAMES } from '@/lib/constants';
+import { Category } from '@/types/product';
 import { cn } from '@/lib/utils';
 
 interface FilterSheetProps {
+  categories: Category[];
   isOpen: boolean;
   onClose: () => void;
   selectedCategories: string[];
@@ -26,6 +27,7 @@ interface FilterSheetProps {
 }
 
 export function FilterSheet({
+  categories,
   isOpen,
   onClose,
   selectedCategories,
@@ -88,9 +90,9 @@ export function FilterSheet({
             دسته‌بندی‌ها
           </p>
           <div className="flex flex-wrap gap-2">
-            {Object.entries(CATEGORY_NAMES)
-              .filter(([key]) => key !== 'all')
-              .map(([key, label]) => {
+            {categories.map(category => {
+                const key = category.slug;
+                const label = category.name;
                 const checked = draftCategories.includes(key);
                 return (
                   <label

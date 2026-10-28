@@ -15,16 +15,18 @@ import { EmptyState } from '@/components/shared/empty-state';
 import { Icon } from '@/components/ui/icon';
 import { productsService } from '@/services/products.service';
 import { useCart } from '@/context/cart-context';
-import { Product } from '@/types/product';
-import { CATEGORY_NAMES } from '@/lib/constants';
+import { Category, Product } from '@/types/product';
+import { categoriesService } from '@/services/categories.service';
+import { matchesProductCategories } from '@/lib/catalog';
 import { toFa } from '@/lib/utils';
-import { toast } from 'sonner';
 
 function ProductsCatalogContent() {
   const searchParams = useSearchParams();
   const initialCategory = searchParams.get('category');
 
   const [products, setProducts] = useState<Product[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategories, setSelectedCategories] = useState<string[]>(
     initialCategory ? [initialCategory] : []
@@ -38,15 +40,26 @@ function ProductsCatalogContent() {
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [isSortOpen, setIsSortOpen] = useState(false);
 
-  const { addToCart } = useCart();
+  const { getItemQuantity, setQuantity } = useCart();
 
   useEffect(() => {
-    async function loadData() {
-      const items = await productsService.getProducts();
+    let active = true;
+    const controller = new AbortController();
+    Promise.all([
+      productsService.getProducts(),
+      categoriesService.getCategories(controller.signal).catch(() => [] as Category[]),
+    ]).then(([items, categoryList]) => {
+      if (!active) return;
       setProducts(items);
-    }
-    loadData();
+      setCategories(categoryList);
+      setLoading(false);
+    });
+    return () => { active = false; controller.abort(); };
   }, []);
+
+  useEffect(() => {
+    setSelectedCategories(initialCategory ? [initialCategory] : []);
+  }, [initialCategory]);
 
   const handleSelectQuickCategory = (catKey: string) => {
     if (catKey === 'all') {
@@ -64,9 +77,7 @@ function ProductsCatalogContent() {
         (p.shortDescription &&
           p.shortDescription.toLowerCase().includes(searchQuery.toLowerCase()));
 
-      const matchesCategory =
-        selectedCategories.length === 0 ||
-        selectedCategories.some((c) => p.categories?.includes(c));
+      const matchesCategory = matchesProductCategories(p, selectedCategories, categories);
 
       const price = p.price ?? 0;
       const min = minPrice ? Number(minPrice) : null;
@@ -90,6 +101,7 @@ function ProductsCatalogContent() {
     products,
     searchQuery,
     selectedCategories,
+    categories,
     minPrice,
     maxPrice,
     onlyDiscount,
@@ -126,11 +138,6 @@ function ProductsCatalogContent() {
     onlyDiscount ||
     onlyReward;
 
-  const handleAddToCart = (product: Product) => {
-    addToCart(product, 1);
-    toast.success(`${product.name} به سبد افزوده شد`);
-  };
-
   return (
     <>
       <PromoSlider catalogMode />
@@ -151,6 +158,7 @@ function ProductsCatalogContent() {
 
       {/* Sticky Filter Bar */}
       <FilterBar
+        categories={categories}
         activeCategories={selectedCategories}
         onSelectCategory={handleSelectQuickCategory}
         onOpenFilterSheet={() => setIsFilterOpen(true)}
@@ -163,17 +171,20 @@ function ProductsCatalogContent() {
       <p className="py-2.5 text-[9px] text-[#89978f]">
         {toFa(sortedProducts.length)} کالا
         {selectedCategories.length > 0 &&
-          ` در ${selectedCategories.map((c) => CATEGORY_NAMES[c] || c).join('، ')}`}
+          ` در ${selectedCategories.map(key => categories.find(category => category.slug === key || category.id === key)?.name || 'دسته‌بندی انتخاب‌شده').join('، ')}`}
       </p>
 
       {/* Products list */}
-      {sortedProducts.length > 0 ? (
-        <section className="flex flex-col">
+      {loading ? (
+        <p role="status" className="py-12 text-center text-xs text-sn-muted">در حال دریافت کالاها...</p>
+      ) : sortedProducts.length > 0 ? (
+        <section className="flex flex-col gap-3 pb-4">
           {sortedProducts.map((product) => (
             <ProductListCard
               key={product.id}
               product={product}
-              onAddToCart={handleAddToCart}
+              quantity={getItemQuantity(product.id)}
+              onQuantityChange={quantity => setQuantity(product, quantity)}
             />
           ))}
         </section>
@@ -183,6 +194,7 @@ function ProductsCatalogContent() {
 
       {/* Filter Bottom Sheet */}
       <FilterSheet
+        categories={categories}
         isOpen={isFilterOpen}
         onClose={() => setIsFilterOpen(false)}
         selectedCategories={selectedCategories}

@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="860" height="120" viewBox="0 0 860 120">
+<defs><linearGradient id="green" x2="1" y2="1"><stop stop-color="#0b654b"/><stop offset="1" stop-color="#17815a"/></linearGradient></defs>
+<path fill="url(#green)" d="M0 0h860v120H0z"/>
+<g fill="none" stroke="#fff" opacity=".08" stroke-width="14"><circle cx="810" cy="135" r="98"/><circle cx="280" cy="-50" r="110"/></g>
+<path fill="#dfc48b" d="m237 34 6 15 16 6-16 6-6 15-6-15-16-6 16-6z"/>
+<g font-family="Tahoma,Arial,sans-serif" direction="rtl" text-anchor="start">
+<text x="810" y="53" font-size="26" font-weight="bold" fill="#fff">خرید روزمره با سودانه</text>
+<text x="810" y="85" font-size="17" fill="#d5f0e3">انتخاب راحت، خرید دلخواه</text>
+</g>
+<rect x="28" y="35" width="150" height="50" rx="14" fill="#fff" fill-opacity=".16" stroke="#fff" stroke-opacity=".3"/>
+<text x="103" y="67" font-family="Tahoma,Arial,sans-serif" text-anchor="middle" direction="rtl" font-size="18" font-weight="bold" fill="#fff">مشاهده کالاها</text>
+</svg>

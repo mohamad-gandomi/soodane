@@ -43,10 +43,15 @@ export const productsService = {
 function normalizeProduct(p: any): Product {
   return {
     ...p,
-    price: Number(p.salePrice || p.basePrice || p.price || 0),
-    oldPrice: p.salePrice ? Number(p.basePrice) : p.oldPrice || null,
+    price: Number(p.salePrice ?? p.basePrice ?? p.price ?? 0),
+    oldPrice: p.salePrice != null ? Number(p.basePrice) : p.oldPrice != null ? Number(p.oldPrice) : null,
     reward: Number(p.refereeRewardValue || p.reward || 0),
-    image: p.images?.[0]?.url || p.image || '/assets/products/rice.png',
-    categories: p.categories || (p.category?.slug ? [p.category.slug] : ['supermarket']),
+    image: p.images?.find((image: { isPrimary?: boolean }) => image.isPrimary)?.url || p.images?.[0]?.url || p.image || '/assets/products/rice.png',
+    categories: Array.isArray(p.categories)
+      ? p.categories.flatMap((category: string | { slug?: string; category?: { slug?: string } }) => {
+          const slug = typeof category === 'string' ? category : category.slug || category.category?.slug;
+          return slug ? [slug] : [];
+        })
+      : p.category?.slug ? [p.category.slug] : [],
   };
 }

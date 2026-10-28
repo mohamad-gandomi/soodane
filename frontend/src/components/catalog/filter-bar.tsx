@@ -2,10 +2,11 @@
 
 import React from 'react';
 import { Icon } from '@/components/ui/icon';
-import { CATEGORY_NAMES } from '@/lib/constants';
+import { Category } from '@/types/product';
 import { cn } from '@/lib/utils';
 
 interface FilterBarProps {
+  categories: Category[];
   activeCategories: string[];
   onSelectCategory: (catId: string) => void;
   onOpenFilterSheet: () => void;
@@ -15,6 +16,7 @@ interface FilterBarProps {
 }
 
 export function FilterBar({
+  categories,
   activeCategories,
   onSelectCategory,
   onOpenFilterSheet,
@@ -51,7 +53,9 @@ export function FilterBar({
 
       {/* Horizontal scrollable category chips */}
       <div className="flex min-w-0 flex-1 gap-1.5 overflow-x-auto scrollbar-none">
-        {Object.entries(CATEGORY_NAMES).map(([key, label]) => {
+        {[{ id: 'all', slug: 'all', name: 'همه' }, ...categories].map(category => {
+          const key = category.slug;
+          const label = category.name;
           const isActive =
             key === 'all'
               ? activeCategories.length === 0
@@ -61,6 +65,7 @@ export function FilterBar({
             <button
               key={key}
               type="button"
+              aria-pressed={isActive}
               onClick={() => onSelectCategory(key)}
               className={cn(
                 'h-[30px] shrink-0 rounded-full border border-[#dde7e1] bg-[#f6f9f7] px-2.5 text-[8.5px] font-medium text-[#65776d] whitespace-nowrap transition-colors cursor-pointer',

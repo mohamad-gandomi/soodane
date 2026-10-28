@@ -10,6 +10,8 @@ export interface Category {
   name: string;
   slug: string;
   description?: string | null;
+  parentId?: string | null;
+  displayOrder?: number;
   image?: string | null;
 }
 

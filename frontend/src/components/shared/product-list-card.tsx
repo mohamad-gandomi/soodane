@@ -1,76 +1,70 @@
+'use client';
+
 import React from 'react';
 import Link from 'next/link';
 import { Product } from '@/types/product';
 import { calculateDiscount, formatMoney, toFa } from '@/lib/utils';
-import { Badge } from '@/components/ui/badge';
+import { QuantityControl } from './quantity-control';
 
 interface ProductListCardProps {
   product: Product;
-  onAddToCart: (product: Product) => void;
+  quantity: number;
+  onQuantityChange: (quantity: number) => void;
 }
 
-export function ProductListCard({ product, onAddToCart }: ProductListCardProps) {
+export function ProductListCard({ product, quantity, onQuantityChange }: ProductListCardProps) {
   const discountPercent = calculateDiscount(product.price ?? 0, product.oldPrice);
+  const available = product.manageStock !== true || product.stockQuantity > 0;
+  const variable = product.productType === 'VARIABLE';
+  const maxQuantity = product.manageStock === true ? Math.min(10, product.stockQuantity) : 10;
 
   return (
-    <article className="grid grid-cols-[98px_1fr] gap-3.5 py-4 border-b border-sn-line last:border-b-0 items-stretch">
-      {/* 1. Right Column (Image + Add Button) */}
-      <div className="flex flex-col items-center justify-between gap-2">
-        <Link
-          href={`/products/${product.slug}`}
-          className="h-[105px] w-[98px] rounded-[10px] bg-[#f5f8f6] flex items-center justify-center overflow-hidden hover:opacity-90 transition-opacity border border-sn-line/30 shrink-0"
-        >
-          <img
-            src={product.image || '/assets/products/rice.png'}
-            alt={product.images?.[0]?.altText || product.name}
-            className="h-full w-full object-cover"
-          />
+    <article className="rounded-[16px] border border-sn-line bg-white p-3.5 flex flex-col gap-2.5 shadow-sm hover:border-sn-green/30 transition-colors">
+      <div className="grid grid-cols-[88px_minmax(0,1fr)] gap-3 items-start">
+        <Link href={`/products/${product.slug}`} className="block">
+          <div className="h-[88px] w-[88px] rounded-[12px] bg-[#f8faf9] overflow-hidden border border-sn-line/30">
+            <img
+              src={product.image || '/assets/products/rice.png'}
+              alt={product.images?.[0]?.altText || product.name}
+              loading="lazy"
+              className="h-full w-full object-cover"
+            />
+          </div>
         </Link>
-
-        <button
-          type="button"
-          onClick={() => onAddToCart(product)}
-          className="w-full h-[35px] rounded-[8px] bg-[rgba(23,129,90,0.09)] text-sn-green text-[11px] font-black hover:bg-[rgba(23,129,90,0.18)] active:scale-95 transition-all cursor-pointer"
-        >
-          + افزودن
-        </button>
-      </div>
-
-      {/* 2. Left Column (Details + Price) */}
-      <div className="flex flex-col justify-between overflow-hidden">
-        <div>
-          <Link href={`/products/${product.slug}`} className="group">
-            <h2 className="text-[14px] font-bold text-sn-text group-hover:text-sn-green transition-colors line-clamp-1">
-              {product.name}
-            </h2>
-            {product.shortDescription && (
-              <p className="mt-1 text-[10px] text-sn-muted line-clamp-2 leading-[1.8]">
-                {product.shortDescription}
-              </p>
-            )}
+        <div className="min-w-0">
+          <Link href={`/products/${product.slug}`} className="text-[13px] font-bold text-sn-text leading-snug hover:text-sn-green transition-colors line-clamp-2">
+            {product.name}
           </Link>
-          <div className="mt-2">
-            <Badge variant="default">
-              پاداش خرید + {toFa(product.reward)} تومان
-            </Badge>
+          {product.shortDescription && <p className="mt-1 text-[10px] leading-relaxed text-sn-muted line-clamp-1">{product.shortDescription}</p>}
+          <div className="flex items-center gap-1.5 mt-2 flex-wrap">
+            {(product.reward ?? 0) > 0 && (
+              <span className="inline-flex px-2 py-0.5 rounded-[5px] bg-sn-pale text-sn-green text-[9px] font-bold">
+                پاداش خرید + {toFa(product.reward)} تومان
+              </span>
+            )}
+            <span className="inline-flex px-2 py-0.5 rounded-[5px] bg-[#f0f4f2] text-[#718279] text-[8.5px] font-medium">
+              {variable ? 'انتخاب گزینه‌ها' : available ? 'موجود' : 'ناموجود'}
+            </span>
           </div>
         </div>
-
-        <div className="mt-3 flex items-baseline gap-2">
+      </div>
+      <div className="flex flex-wrap items-center justify-between gap-2 border-t border-[#edf0ee] pt-2.5 mt-1">
+        <div className="flex flex-wrap items-baseline gap-1.5">
+          <strong className="text-[13.5px] font-black text-sn-text">{formatMoney(product.price)}</strong>
           {discountPercent > 0 && (
-            <Badge variant="discount">
-              {toFa(discountPercent)}٪
-            </Badge>
+            <>
+              <span className="text-[10px] text-[#a3aaa6] line-through">{toFa(product.oldPrice)}</span>
+              <span className="text-[8.5px] font-bold text-[#2c7b5c] bg-[#eef8f3] px-1.5 py-0.5 rounded-[5px]">
+                تخفیف {toFa(discountPercent)}٪
+              </span>
+            </>
           )}
-          {product.oldPrice && (
-            <span className="text-[10px] text-[#a3aaa6] line-through">
-              {toFa(product.oldPrice)}
-            </span>
-          )}
-          <strong className="text-[14px] font-black text-sn-text">
-            {formatMoney(product.price)}
-          </strong>
         </div>
+        {variable ? (
+          <Link href={`/products/${product.slug}`} className="rounded-[7px] bg-sn-pale px-3 py-2 text-[9px] font-bold text-sn-green">انتخاب گزینه‌ها</Link>
+        ) : available ? (
+          <QuantityControl value={quantity} onChange={onQuantityChange} max={maxQuantity} />
+        ) : <span className="text-[10px] text-sn-muted">فعلاً ناموجود</span>}
       </div>
     </article>
   );

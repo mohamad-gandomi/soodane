@@ -1,0 +1,113 @@
+{
+  "home.hero": [
+    {
+      "mobileImageUrl": null,
+      "linkUrl": null,
+      "isActive": true,
+      "contentType": "COMPOSITE",
+      "textColor": "#284838",
+      "buttonText": "مشاهده کالاها",
+      "buttonUrl": "/products",
+      "title": "خرید روزمره از سودانه",
+      "imageUrl": "https://app.sodaneh.ir/assets/products/oil.jpg",
+      "altText": "خرید روزمره از سودانه",
+      "eyebrow": "فروشگاه سودانه",
+      "displayTitle": "خرید روزمره، ساده‌تر از همیشه",
+      "subtitle": "کالاهای مورد نیاز خانه را یکجا انتخاب کنید.",
+      "backgroundColor": "#FFF0D7"
+    },
+    {
+      "mobileImageUrl": null,
+      "linkUrl": null,
+      "isActive": true,
+      "contentType": "COMPOSITE",
+      "textColor": "#284838",
+      "buttonText": "مشاهده برنج‌ها",
+      "buttonUrl": "/products?category=brng",
+      "title": "برنج سفرهٔ هر روز",
+      "imageUrl": "https://app.sodaneh.ir/assets/products/rice.png",
+      "altText": "برنج سفرهٔ هر روز",
+      "eyebrow": "انتخاب از دسته‌بندی برنج",
+      "displayTitle": "برای سفرهٔ هر روز",
+      "subtitle": "انواع برنج را در فروشگاه سودانه ببینید.",
+      "backgroundColor": "#E2F3E9"
+    },
+    {
+      "mobileImageUrl": null,
+      "linkUrl": null,
+      "isActive": true,
+      "contentType": "COMPOSITE",
+      "textColor": "#294469",
+      "buttonText": "مشاهده چای‌ها",
+      "buttonUrl": "/products?category=tea",
+      "title": "چای و لحظه‌های خوش",
+      "imageUrl": "https://app.sodaneh.ir/assets/products/tea.jpg",
+      "altText": "چای و لحظه‌های خوش",
+      "eyebrow": "یک استکان آرامش",
+      "displayTitle": "وقت یک چای خوش‌عطر",
+      "subtitle": "از دسته‌بندی چای، انتخاب دلخواهتان را پیدا کنید.",
+      "backgroundColor": "#E8EEF9"
+    }
+  ],
+  "shop.hero": [
+    {
+      "mobileImageUrl": null,
+      "linkUrl": null,
+      "isActive": true,
+      "contentType": "COMPOSITE",
+      "textColor": "#284838",
+      "buttonText": "مشاهده برنج‌ها",
+      "buttonUrl": "/products?category=brng",
+      "title": "برنج سفرهٔ هر روز",
+      "imageUrl": "https://app.sodaneh.ir/assets/products/rice.png",
+      "altText": "برنج سفرهٔ هر روز",
+      "eyebrow": "انتخاب از دسته‌بندی برنج",
+      "displayTitle": "برای سفرهٔ هر روز",
+      "subtitle": "انواع برنج را در فروشگاه سودانه ببینید.",
+      "backgroundColor": "#E2F3E9"
+    },
+    {
+      "mobileImageUrl": null,
+      "linkUrl": null,
+      "isActive": true,
+      "contentType": "COMPOSITE",
+      "textColor": "#284838",
+      "buttonText": "مشاهده کالاها",
+      "buttonUrl": "/products",
+      "title": "خرید روزمره از سودانه",
+      "imageUrl": "https://app.sodaneh.ir/assets/products/oil.jpg",
+      "altText": "خرید روزمره از سودانه",
+      "eyebrow": "فروشگاه سودانه",
+      "displayTitle": "خرید روزمره، ساده‌تر از همیشه",
+      "subtitle": "کالاهای مورد نیاز خانه را یکجا انتخاب کنید.",
+      "backgroundColor": "#FFF0D7"
+    },
+    {
+      "mobileImageUrl": null,
+      "linkUrl": null,
+      "isActive": true,
+      "contentType": "COMPOSITE",
+      "textColor": "#294469",
+      "buttonText": "مشاهده چای‌ها",
+      "buttonUrl": "/products?category=tea",
+      "title": "چای و لحظه‌های خوش",
+      "imageUrl": "https://app.sodaneh.ir/assets/products/tea.jpg",
+      "altText": "چای و لحظه‌های خوش",
+      "eyebrow": "یک استکان آرامش",
+      "displayTitle": "وقت یک چای خوش‌عطر",
+      "subtitle": "از دسته‌بندی چای، انتخاب دلخواهتان را پیدا کنید.",
+      "backgroundColor": "#E8EEF9"
+    }
+  ],
+  "header.promo": [
+    {
+      "title": "بنر بالای هدر سودانه",
+      "imageUrl": "https://app.sodaneh.ir/assets/promotions/header-promo.svg",
+      "mobileImageUrl": null,
+      "altText": "خرید روزمره با سودانه؛ مشاهده کالاهای فروشگاه",
+      "linkUrl": "/products",
+      "isActive": true,
+      "contentType": "IMAGE"
+    }
+  ]
+}
