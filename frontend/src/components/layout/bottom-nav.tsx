@@ -4,6 +4,7 @@ import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Icon, IconName } from '@/components/ui/icon';
+import { useAuth } from '@/context/auth-context';
 import { cn } from '@/lib/utils';
 
 interface NavItem {
@@ -22,6 +23,7 @@ const NAV_ITEMS: NavItem[] = [
 
 export function BottomNav() {
   const pathname = usePathname();
+  const { isAuthenticated } = useAuth();
 
   return (
     <nav
@@ -37,7 +39,7 @@ export function BottomNav() {
         return (
           <Link
             key={item.label}
-            href={item.href}
+            href={item.href === '/account' && !isAuthenticated ? '/auth?redirect=%2Faccount' : item.href}
             className={cn(
               'flex flex-col items-center justify-center gap-1.5 py-1 text-[#7d8c84] transition-colors',
               isActive && 'text-sn-green font-extrabold'

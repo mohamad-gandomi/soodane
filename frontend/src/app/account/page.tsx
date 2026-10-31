@@ -27,16 +27,23 @@ function formatDisplayPhone(rawPhone?: string): string {
 
 export default function AccountPage() {
   const router = useRouter();
-  const { user, logout } = useAuth();
+  const { user, logout, isAuthenticated, isLoading } = useAuth();
   const [isLogoutSheetOpen, setIsLogoutSheetOpen] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [addressesCount, setAddressesCount] = useState<number | null>(null);
 
   React.useEffect(() => {
+    if (isLoading) return;
+    if (!isAuthenticated) {
+      router.replace('/auth?redirect=%2Faccount');
+      return;
+    }
+    let active = true;
     addressesService.getAddresses().then((list) => {
-      setAddressesCount(list.length);
-    });
-  }, []);
+      if (active) setAddressesCount(list.length);
+    }).catch(() => {});
+    return () => { active = false; };
+  }, [isLoading, isAuthenticated, router]);
 
   const handleConfirmLogout = () => {
     setIsLoggingOut(true);
@@ -55,6 +62,8 @@ export default function AccountPage() {
 
   const displayPhone = user?.phone ? formatDisplayPhone(user.phone) : '-';
   const avatarLetter = displayName ? displayName[0] : 'ک';
+
+  if (isLoading || !isAuthenticated) return <AppShell><p role="status">در حال بررسی ورود...</p></AppShell>;
 
   return (
     <AppShell>
