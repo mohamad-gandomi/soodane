@@ -1,6 +1,7 @@
 import { apiClient } from '@/lib/api-client';
 import { storage } from '@/lib/storage';
 import { User } from '@/types/user';
+import { isValidShamsiDate, shamsiToGregorianIso } from '@/lib/date-utils';
 
 export interface SendOtpResponse {
   success: boolean;
@@ -103,9 +104,16 @@ export const authService = {
     birthDate?: string;
   }): Promise<User> {
     try {
+      let birthDate = data.birthDate?.trim() || undefined;
+      if (birthDate && !/^\d{4}-\d{2}-\d{2}(?:T|$)/.test(birthDate)) {
+        if (!isValidShamsiDate(birthDate)) {
+          throw new Error('تاریخ تولد را به‌صورت کامل و معتبر وارد کنید');
+        }
+        birthDate = shamsiToGregorianIso(birthDate) || undefined;
+      }
       const updated = await apiClient<User>('/auth/profile', {
         method: 'PATCH',
-        body: JSON.stringify(data),
+        body: JSON.stringify({ ...data, birthDate }),
       });
       if (updated) {
         storage.setUser(updated);
