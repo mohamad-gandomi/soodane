@@ -151,7 +151,8 @@ export function shamsiToGregorianIso(shamsiStr?: string | null): string | null {
   const m = parseInt(match[2], 10);
   const d = parseInt(match[3], 10);
 
-  if (y < 1300 || y > 1450 || m < 1 || m > 12 || d < 1 || d > 31) {
+  const canonical = `${y}/${String(m).padStart(2, '0')}/${String(d).padStart(2, '0')}`;
+  if (!isValidShamsiDate(canonical)) {
     return null;
   }
 
@@ -178,7 +179,9 @@ export function maskShamsiDateInput(
     if (parts.length === 3 && parts[0].replace(/\D/g, '').length === 4) {
       const y = parts[0].replace(/\D/g, '').slice(0, 4);
       const m = parts[1].replace(/\D/g, '').padStart(2, '0').slice(0, 2);
-      const d = parts[2].replace(/\D/g, '').padStart(2, '0').slice(0, 2);
+      // Keep the day partial while typing; padding "2" to "02" changes
+      // the user's intended date before they can finish entering "21".
+      const d = parts[2].replace(/\D/g, '').slice(0, 2);
       digits = `${y}${m}${d}`;
     } else {
       digits = eng.replace(/\D/g, '').slice(0, 8);

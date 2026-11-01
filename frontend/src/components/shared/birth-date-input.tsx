@@ -7,6 +7,7 @@ import {
   SHAMSI_MONTHS,
   maskShamsiDateInput,
   isValidShamsiDate,
+  isJalaliLeapYear,
   shamsiToGregorianIso,
   gregorianToShamsiString,
   toEnglishDigits,
@@ -88,9 +89,9 @@ export function BirthDateInput({
   const handleConfirmPicker = () => {
     const pad = (n: number) => String(n).padStart(2, '0');
     const shamsi = `${toFaDigits(selectedYear)}/${toFaDigits(pad(selectedMonth))}/${toFaDigits(pad(selectedDay))}`;
-    setInputValue(shamsi);
-
     const iso = shamsiToGregorianIso(`${selectedYear}/${pad(selectedMonth)}/${pad(selectedDay)}`);
+    if (!iso) return;
+    setInputValue(shamsi);
     onChange(shamsi, iso);
     setIsPickerOpen(false);
   };
@@ -105,9 +106,15 @@ export function BirthDateInput({
       ? 31
       : selectedMonth <= 11
       ? 30
-      : selectedYear % 4 === 3
+      : isJalaliLeapYear(selectedYear)
       ? 30
       : 29;
+
+  // Keep the selected state and visible option in sync when switching from
+  // a 31-day month, or from leap Esfand to a non-leap year.
+  useEffect(() => {
+    setSelectedDay((day) => Math.min(day, maxDaysInMonth));
+  }, [maxDaysInMonth]);
 
   return (
     <div className={cn('flex flex-col gap-[7px]', className)}>
