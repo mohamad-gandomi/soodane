@@ -47,7 +47,7 @@ export interface Order {
   customerPhone?: string | null;
   status: OrderStatus;
   paymentStatus: PaymentStatus;
-  paymentMethod: 'ONLINE' | 'CARD_TO_CARD' | 'WALLET' | 'CASH_ON_DELIVERY';
+  paymentMethod: 'ONLINE' | 'CARD_TO_CARD' | 'WALLET' | 'CASH_ON_DELIVERY' | 'BANK_TRANSFER' | (string & {});
   subtotal: number;
   discountAmount: number;
   taxAmount: number;

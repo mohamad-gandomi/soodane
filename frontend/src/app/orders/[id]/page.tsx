@@ -12,7 +12,7 @@ import { Icon } from '@/components/ui/icon';
 import { ordersService } from '@/services/orders.service';
 import { Order } from '@/types/order';
 import { toFa } from '@/lib/utils';
-import { MapPin, Truck, CreditCard, Gift, Download } from 'lucide-react';
+import { MapPin, Truck, CreditCard, Gift, Download, Landmark, FileText, CheckCircle2, Clock, XCircle, UploadCloud } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function OrderDetailPage() {
@@ -21,6 +21,12 @@ export default function OrderDetailPage() {
 
   const [order, setOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(true);
+  const [receipts, setReceipts] = useState<any[]>([]);
+  const [loadingReceipts, setLoadingReceipts] = useState(false);
+  const [uploadingReceipt, setUploadingReceipt] = useState(false);
+  const [receiptFile, setReceiptFile] = useState<File | null>(null);
+  const [trackingNumber, setTrackingNumber] = useState('');
+  const [receiptNotes, setReceiptNotes] = useState('');
 
   useEffect(() => {
     async function loadOrder() {
@@ -31,12 +37,42 @@ export default function OrderDetailPage() {
       try {
         const data = await ordersService.getOrderById(id);
         setOrder(data);
+        if (data && (data.paymentMethod === 'BANK_TRANSFER' || (data.paymentMethod as string) === 'CARD_TO_CARD')) {
+          try {
+            const rData = await ordersService.getOrderReceipts(id);
+            setReceipts(rData?.receipts || []);
+          } catch {}
+        }
       } finally {
         setLoading(false);
       }
     }
     loadOrder();
   }, [id]);
+
+  const handleUploadReceipt = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!receiptFile) {
+      toast.error('لطفاً فایل تصویر یا فیش واریز را انتخاب کنید.');
+      return;
+    }
+    setUploadingReceipt(true);
+    try {
+      await ordersService.uploadReceipt(id, receiptFile, trackingNumber.trim() || undefined, receiptNotes.trim() || undefined);
+      toast.success('فیش پرداخت با موفقیت ثبت شد و در انتظار تأیید مدیریت قرار گرفت.');
+      setReceiptFile(null);
+      setTrackingNumber('');
+      setReceiptNotes('');
+      const rData = await ordersService.getOrderReceipts(id);
+      setReceipts(rData?.receipts || []);
+      const updatedOrder = await ordersService.getOrderById(id);
+      if (updatedOrder) setOrder(updatedOrder);
+    } catch (err: any) {
+      toast.error(err.message || 'خطا در بارگذاری فیش');
+    } finally {
+      setUploadingReceipt(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -242,19 +278,166 @@ export default function OrderDetailPage() {
           {/* Payment Method Row */}
           <div className="flex items-start gap-3">
             <div className="w-8 h-8 rounded-[8px] bg-[#f4f7f5] flex items-center justify-center text-sn-green shrink-0 mt-0.5">
-              <CreditCard size={16} />
+              {order.paymentMethod === 'CASH_ON_DELIVERY' ? <Truck size={16} /> : order.paymentMethod === 'BANK_TRANSFER' || (order.paymentMethod as string) === 'CARD_TO_CARD' ? <Landmark size={16} /> : <CreditCard size={16} />}
             </div>
             <div>
-              <b className="block text-[11px] font-bold text-sn-text">پرداخت آنلاین</b>
+              <b className="block text-[11px] font-bold text-sn-text">
+                {order.paymentMethod === 'CASH_ON_DELIVERY'
+                  ? 'پرداخت نقدی در محل'
+                  : order.paymentMethod === 'BANK_TRANSFER' || (order.paymentMethod as string) === 'CARD_TO_CARD'
+                  ? 'کارت به کارت / فیش بانکی'
+                  : order.paymentMethod === 'WALLET'
+                  ? 'کیف پول و اعتبار پاداش'
+                  : 'پرداخت آنلاین شاپرک'}
+              </b>
               <p className="text-[10px] text-[#6b7b73] mt-0.5">
                 {order.paymentStatus === 'PAID'
-                  ? 'پرداخت با موفقیت تأیید شده است.'
-                  : 'در انتظار تأیید پرداخت'}
+                  ? (order.paymentMethod === 'CASH_ON_DELIVERY' ? 'پرداخت در محل تسویه و تأیید شده است.' : 'پرداخت با موفقیت تأیید شده است.')
+                  : (order.paymentMethod === 'CASH_ON_DELIVERY'
+                      ? 'مبلغ سفارش هنگام تحویل دریافت خواهد شد.'
+                      : order.paymentMethod === 'BANK_TRANSFER' || (order.paymentMethod as string) === 'CARD_TO_CARD'
+                      ? (receipts.some(r => r.status === 'PENDING_REVIEW')
+                          ? 'فیش شما ارسال شده و در حال بررسی توسط مدیریت است.'
+                          : 'لطفاً فیش واریزی خود را در بخش زیر بارگذاری فرمایید.')
+                      : 'در انتظار پرداخت')}
               </p>
             </div>
           </div>
         </div>
       </section>
+
+      {/* Bank Transfer Details & Receipt Upload Section */}
+      {(order.paymentMethod === 'BANK_TRANSFER' || (order.paymentMethod as string) === 'CARD_TO_CARD') && (
+        <section className="mb-4">
+          <h2 className="text-[13px] font-bold text-sn-text mb-2 px-1">
+            واریز کارت به کارت و ارسال فیش
+          </h2>
+
+          <div className="p-4 rounded-[16px] bg-[#fbfdfc] border border-[#d8ebe0] shadow-none">
+            <div className="flex items-center gap-2 mb-3">
+              <div className="w-8 h-8 rounded-[8px] bg-[#edf8f2] flex items-center justify-center text-sn-green shrink-0">
+                <Landmark size={16} />
+              </div>
+              <div>
+                <b className="block text-[12px] font-bold text-sn-text">حساب بانکی فروشگاه سودانه</b>
+                <span className="text-[10px] text-[#6b7b73]">لطفاً مبلغ کل را واریز و تصویر فیش یا اسکرین‌شات رسید را ارسال کنید.</span>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-[12px] border border-sn-line/60 p-3 space-y-2 text-xs">
+              <div className="flex items-center justify-between">
+                <span className="text-[#6b7b73]">شماره کارت بانکی:</span>
+                <span className="font-mono font-bold tracking-wider text-sn-text text-[13px]" dir="ltr">۶۰۳۷-۹۹۷۵-۸۸۲۱-۳۴۵۶</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-[#6b7b73]">صاحب حساب:</span>
+                <span className="font-bold text-sn-text">فروشگاه محصولات ارگانیک سودانه</span>
+              </div>
+              <div className="flex items-center justify-between border-t border-sn-line/40 pt-2">
+                <span className="text-[#6b7b73]">مبلغ قابل پرداخت:</span>
+                <span className="font-black text-sn-green text-sm">{toFa(order.totalAmount)} تومان</span>
+              </div>
+            </div>
+
+            {/* List of previously uploaded receipts */}
+            {receipts.length > 0 && (
+              <div className="mt-4 space-y-2">
+                <h3 className="text-[11px] font-bold text-sn-text">رسیدهای ارسال‌شده شما:</h3>
+                {receipts.map((rc) => (
+                  <div key={rc.id} className="p-2.5 rounded-[10px] bg-white border border-sn-line/60 flex items-center justify-between text-xs">
+                    <div className="space-y-0.5">
+                      <div className="flex items-center gap-1.5">
+                        <FileText size={14} className="text-[#6b7b73]" />
+                        <span className="font-medium text-[11px]">{rc.originalName || 'رسید پرداخت'}</span>
+                      </div>
+                      {rc.trackingNumber && (
+                        <span className="text-[10px] text-[#849089] block">شماره ارجاع / پیگیری: {rc.trackingNumber}</span>
+                      )}
+                    </div>
+                    <div className="text-left">
+                      {rc.status === 'APPROVED' && (
+                        <span className="px-2 py-0.5 rounded-[6px] bg-emerald-50 text-emerald-700 text-[10px] font-bold inline-flex items-center gap-1">
+                          <CheckCircle2 size={12} />
+                          تأیید شد
+                        </span>
+                      )}
+                      {rc.status === 'PENDING_REVIEW' && (
+                        <span className="px-2 py-0.5 rounded-[6px] bg-amber-50 text-amber-700 text-[10px] font-bold inline-flex items-center gap-1">
+                          <Clock size={12} />
+                          در انتظار بررسی
+                        </span>
+                      )}
+                      {rc.status === 'REJECTED' && (
+                        <div>
+                          <span className="px-2 py-0.5 rounded-[6px] bg-red-50 text-red-700 text-[10px] font-bold inline-flex items-center gap-1">
+                            <XCircle size={12} />
+                            رد شد
+                          </span>
+                          {rc.rejectionReason && (
+                            <p className="text-[9px] text-red-600 mt-0.5 max-w-[150px] truncate">{rc.rejectionReason}</p>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Upload Form */}
+            {order.paymentStatus !== 'PAID' && (
+              <form onSubmit={handleUploadReceipt} className="mt-4 pt-3 border-t border-[#d8ebe0] space-y-3">
+                <h3 className="text-[11px] font-bold text-sn-text flex items-center gap-1.5">
+                  <UploadCloud size={15} className="text-sn-green" />
+                  {receipts.length > 0 ? 'ارسال مجدد فیش یا رسید جدید' : 'بارگذاری فیش واریز'}
+                </h3>
+
+                <div>
+                  <label className="block text-[10px] text-[#6b7b73] mb-1">تصویر یا فایل PDF فیش *</label>
+                  <input
+                    type="file"
+                    accept="image/png,image/jpeg,image/webp,application/pdf"
+                    required
+                    onChange={(e) => setReceiptFile(e.target.files?.[0] || null)}
+                    className="block w-full text-[11px] text-[#556960] file:mr-2 file:py-1.5 file:px-3 file:rounded-[8px] file:border-0 file:text-[10px] file:font-semibold file:bg-sn-green file:text-white hover:file:opacity-90 cursor-pointer"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[10px] text-[#6b7b73] mb-1">شماره پیگیری یا شماره ارجاع تراکنش</label>
+                  <input
+                    type="text"
+                    value={trackingNumber}
+                    onChange={(e) => setTrackingNumber(e.target.value)}
+                    placeholder="مثلاً: ۱۲۳۴۵۶۷۸"
+                    className="w-full h-8 px-2.5 rounded-[8px] border border-sn-line text-xs font-mono text-left"
+                    dir="ltr"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[10px] text-[#6b7b73] mb-1">توضیحات یا یادداشت (اختیاری)</label>
+                  <input
+                    type="text"
+                    value={receiptNotes}
+                    onChange={(e) => setReceiptNotes(e.target.value)}
+                    placeholder="نام بانک، واریزکننده یا ساعت انتقال..."
+                    className="w-full h-8 px-2.5 rounded-[8px] border border-sn-line text-xs text-right"
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={uploadingReceipt || !receiptFile}
+                  className="w-full h-9 rounded-[10px] bg-sn-green text-white font-bold text-xs hover:opacity-90 active:scale-98 transition-all flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed shadow-none"
+                >
+                  {uploadingReceipt ? 'در حال ارسال فیش...' : 'ثبت و ارسال فیش برای حسابداری'}
+                </button>
+              </form>
+            )}
+          </div>
+        </section>
+      )}
 
       {/* 4. Financial Summary (خلاصه مبلغ) */}
       <section className="mb-4">

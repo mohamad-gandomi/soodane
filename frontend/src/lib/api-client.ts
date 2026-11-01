@@ -29,13 +29,17 @@ export async function apiClient<T>(
   }
 
   const token = storage.getToken();
+  const isFormData = typeof FormData !== 'undefined' && rest.body instanceof FormData;
 
-  const mergedHeaders: HeadersInit = {
-    'Content-Type': 'application/json',
+  const mergedHeaders: Record<string, string> = {
     Accept: 'application/json',
+    ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    ...headers,
+    ...((headers as Record<string, string>) || {}),
   };
+  if (isFormData && 'Content-Type' in mergedHeaders) {
+    delete mergedHeaders['Content-Type'];
+  }
 
   try {
     const response = await fetch(url, {

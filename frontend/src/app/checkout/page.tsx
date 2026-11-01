@@ -39,7 +39,7 @@ export default function CheckoutPage() {
   const selectedShipping = shippingMethods.find(method => method.id === shippingId);
   const shippingCost = selectedShipping ? Number(selectedShipping.price) : 0;
   const [useReward, setUseReward] = useState(false);
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethodType>('online');
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethodType>('cod');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
@@ -103,10 +103,21 @@ export default function CheckoutPage() {
       if (!deliveryAddress) throw new Error('آدرس انتخاب‌شده معتبر نیست.');
       const customerPhone = deliveryAddress.phone || user.phone;
       if (!customerPhone) throw new Error('شماره تماس را در نشانی تکمیل کنید.');
-      const gateway = paymentMethod === 'online'
-        ? gateways.find(item => item.type !== 'OFFLINE' && item.currencies.includes('IRT'))?.id
-        : gateways.find(item => item.id === 'BANK_TRANSFER')?.id;
-      if (grandTotal > 0 && !gateway) throw new Error('روش پرداخت انتخاب‌شده در دسترس نیست.');
+      let orderPaymentMethod = 'CASH_ON_DELIVERY';
+      if (grandTotal === 0) {
+        orderPaymentMethod = 'WALLET';
+      } else if (paymentMethod === 'card') {
+        orderPaymentMethod = 'BANK_TRANSFER';
+      } else if (paymentMethod === 'cod') {
+        orderPaymentMethod = 'CASH_ON_DELIVERY';
+      } else {
+        orderPaymentMethod = 'ONLINE';
+      }
+
+      if (grandTotal > 0 && paymentMethod === 'online') {
+        const onlineGateway = gateways.find(item => item.type !== 'OFFLINE' && item.currencies.includes('IRT'))?.id;
+        if (!onlineGateway) throw new Error('درگاه آنلاین شاپرک در انتظار صدور نماد و مجوز است. لطفاً پرداخت در محل یا کارت به کارت را انتخاب نمایید.');
+      }
 
       const payload = {
         customerName,
@@ -121,7 +132,7 @@ export default function CheckoutPage() {
           postalCode: deliveryAddress.postalCode,
         },
         shippingMethod: selectedShipping.id,
-        paymentMethod: grandTotal === 0 ? 'WALLET' : (paymentMethod === 'online' ? 'ONLINE' : 'CARD_TO_CARD'),
+        paymentMethod: orderPaymentMethod,
         useWalletBalance: useReward,
         items: items.map((i) => ({
           productId: i.product.id,
@@ -130,20 +141,32 @@ export default function CheckoutPage() {
       };
       const fingerprint = JSON.stringify({ userId: user?.id, payload });
       const order = await ordersService.createOrder(payload, checkoutKey(fingerprint));
+      sessionStorage.removeItem('soodane.checkout');
+      clearCart();
+
+      if (orderPaymentMethod === 'CASH_ON_DELIVERY') {
+        toast.success(`سفارش شماره ${order.orderNumber} با موفقیت ثبت شد (پرداخت نقدی در محل)`);
+        router.push(`/orders/${order.id}`);
+        return;
+      }
+
+      if (orderPaymentMethod === 'BANK_TRANSFER') {
+        toast.success(`سفارش شماره ${order.orderNumber} با موفقیت ثبت شد. لطفاً فیش واریزی خود را ارسال نمایید.`);
+        router.push(`/orders/${order.id}`);
+        return;
+      }
+
       if (order.paymentStatus !== 'PAID') {
-        if (!gateway) throw new Error('سفارش ثبت شد؛ روش پرداخت را انتخاب کنید.');
+        const gateway = gateways.find(item => item.type !== 'OFFLINE' && item.currencies.includes('IRT'))?.id;
+        if (!gateway) throw new Error('درگاه آنلاین در حال حاضر فعال نیست.');
         const payment = await ordersService.initiatePayment(order.id, gateway);
         if (!payment.success || !payment.paymentUrl) throw new Error('سفارش ثبت شد؛ برای ادامه پرداخت دوباره تلاش کنید.');
-        clearCart();
-        sessionStorage.removeItem('soodane.checkout');
         window.location.assign(payment.paymentUrl);
         return;
       }
-      sessionStorage.removeItem('soodane.checkout');
 
-      clearCart();
       toast.success(`سفارش شماره ${order.orderNumber} با موفقیت ثبت شد!`);
-      router.push('/orders');
+      router.push(`/orders/${order.id}`);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'خطا در ثبت سفارش. لطفاً دوباره تلاش کنید.');
     } finally {

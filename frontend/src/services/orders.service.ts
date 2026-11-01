@@ -51,4 +51,20 @@ export const ordersService = {
     });
     return data;
   },
+
+  async uploadReceipt(orderId: string, file: File, trackingNumber?: string, notes?: string): Promise<any> {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('orderId', orderId);
+    if (trackingNumber) formData.append('trackingNumber', trackingNumber);
+    if (notes) formData.append('notes', notes);
+    return apiClient<any>('/payments/receipts', {
+      method: 'POST',
+      body: formData,
+    });
+  },
+
+  async getOrderReceipts(orderId: string): Promise<{ orderId: string; paymentMethod: string; paymentStatus: string; receipts: any[] }> {
+    return apiClient<{ orderId: string; paymentMethod: string; paymentStatus: string; receipts: any[] }>(`/payments/receipts/order/${orderId}`);
+  },
 };
