@@ -11,9 +11,11 @@ import { CartFooterBar } from '@/components/cart/cart-footer-bar';
 import { EmptyState } from '@/components/shared/empty-state';
 import { Button } from '@/components/ui/button';
 import { useCart } from '@/context/cart-context';
+import { useAuth } from '@/context/auth-context';
 import { toFaDigits } from '@/lib/utils';
 
 export default function CartPage() {
+  const { user } = useAuth();
   const {
     items,
     totalCount,
@@ -71,8 +73,8 @@ export default function CartPage() {
       {items.length > 0 && (
         <CartFooterBar
           payableAmount={subtotal}
-          actionHref="/checkout"
-          actionText="تأیید و ادامه"
+          actionHref={user ? '/checkout' : '/auth?redirect=%2Fcheckout'}
+          actionText={user ? 'تأیید و ادامه' : 'ورود و تکمیل خرید'}
         />
       )}
     </AppShell>

@@ -26,7 +26,7 @@ import { toast } from 'sonner';
 export default function CheckoutPage() {
   const router = useRouter();
 
-  const { user } = useAuth();
+  const { user, isLoading: isAuthLoading } = useAuth();
   const { items, subtotal, clearCart } = useCart();
 
   const [address, setAddress] = useState('');
@@ -43,36 +43,46 @@ export default function CheckoutPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
-    async function initCheckout() {
-      // Load real user addresses
-      const [addrList, wb, methods, availableGateways] = await Promise.all([
-        addressesService.getAddresses(), walletService.getBalance(),
-        ordersService.getShippingMethods(), ordersService.getGateways(),
-      ]);
-      const localMethods = methods.filter(method => method.currency === 'IRT');
-      setShippingMethods(localMethods);
-      setShippingId(localMethods[0]?.id || '');
-      setGateways(availableGateways);
-      setUserAddresses(addrList);
-      if (addrList.length > 0) {
-        const stored = storage.getSelectedAddress();
-        const found = addrList.find((a) => a.street === stored);
-        if (found) {
-          setAddress(found.street);
-        } else {
-          const def = addrList.find((a) => a.isDefaultShipping) || addrList[0];
-          setAddress(def.street);
-          storage.setSelectedAddress(def.street);
-        }
-      } else {
-        setAddress('');
-      }
-
-      // Load real wallet balance
-      setWalletBalance(wb.currency === 'IRT' ? wb.balance : 0);
+    if (isAuthLoading) return;
+    if (!user) {
+      router.replace('/auth?redirect=%2Fcheckout');
+      return;
     }
-    initCheckout().catch(() => toast.error('دریافت اطلاعات سفارش ناموفق بود. صفحه را دوباره باز کنید.'));
-  }, []);
+
+    async function initCheckout() {
+      try {
+        // Load real user addresses
+        const [addrList, wb, methods, availableGateways] = await Promise.all([
+          addressesService.getAddresses(), walletService.getBalance(),
+          ordersService.getShippingMethods(), ordersService.getGateways(),
+        ]);
+        const localMethods = methods.filter(method => method.currency === 'IRT');
+        setShippingMethods(localMethods);
+        setShippingId(localMethods[0]?.id || '');
+        setGateways(availableGateways);
+        setUserAddresses(addrList);
+        if (addrList.length > 0) {
+          const stored = storage.getSelectedAddress();
+          const found = addrList.find((a) => a.street === stored);
+          if (found) {
+            setAddress(found.street);
+          } else {
+            const def = addrList.find((a) => a.isDefaultShipping) || addrList[0];
+            setAddress(def.street);
+            storage.setSelectedAddress(def.street);
+          }
+        } else {
+          setAddress('');
+        }
+
+        // Load real wallet balance
+        setWalletBalance(wb.currency === 'IRT' ? wb.balance : 0);
+      } catch {
+        toast.error('دریافت اطلاعات سفارش ناموفق بود. صفحه را دوباره باز کنید.');
+      }
+    }
+    initCheckout();
+  }, [user, isAuthLoading, router]);
 
   // Display estimate for the current official core; the API calculates the final amount.
   const estimatedTax = Math.round(subtotal * 0.08 * 100) / 100;
@@ -82,7 +92,7 @@ export default function CheckoutPage() {
 
   const handlePlaceOrder = async () => {
     if (isSubmitting) return;
-    if (!user) { router.push('/auth'); return; }
+    if (!user) { router.push('/auth?redirect=%2Fcheckout'); return; }
     if (!selectedShipping) { toast.error('یک روش ارسال معتبر انتخاب کنید.'); return; }
     if (!address) {
       toast.error('لطفاً ابتدا آدرس تحویل سفارش را ثبت یا انتخاب کنید.');
@@ -178,6 +188,18 @@ export default function CheckoutPage() {
     setAddress(newAddr);
     storage.setSelectedAddress(newAddr);
   };
+
+  if (isAuthLoading || !user) {
+    return (
+      <AppShell hasBottomNav={false} className="pb-[95px]">
+        <TopPromo />
+        <TopHeader title="تکمیل سفارش" backHref="/cart" />
+        <div className="py-24 text-center text-sn-muted text-xs">
+          در حال انتقال به صفحه ورود...
+        </div>
+      </AppShell>
+    );
+  }
 
   return (
     <AppShell hasBottomNav={false} className="pb-[95px]">

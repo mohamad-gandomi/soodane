@@ -12,7 +12,7 @@ import { Icon } from '@/components/ui/icon';
 import { ordersService } from '@/services/orders.service';
 import { Order } from '@/types/order';
 import { toFa } from '@/lib/utils';
-import { MapPin, Truck, CreditCard, Gift, Download, Landmark, FileText, CheckCircle2, Clock, XCircle, UploadCloud } from 'lucide-react';
+import { MapPin, Truck, CreditCard, Gift, Download, Landmark, FileText, CheckCircle2, Clock, XCircle, UploadCloud, Copy, Check, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function OrderDetailPage() {
@@ -25,8 +25,8 @@ export default function OrderDetailPage() {
   const [loadingReceipts, setLoadingReceipts] = useState(false);
   const [uploadingReceipt, setUploadingReceipt] = useState(false);
   const [receiptFile, setReceiptFile] = useState<File | null>(null);
-  const [trackingNumber, setTrackingNumber] = useState('');
-  const [receiptNotes, setReceiptNotes] = useState('');
+  const [copiedCard, setCopiedCard] = useState(false);
+
 
   useEffect(() => {
     async function loadOrder() {
@@ -50,6 +50,13 @@ export default function OrderDetailPage() {
     loadOrder();
   }, [id]);
 
+  const handleCopyCard = () => {
+    navigator.clipboard.writeText('6037997588213456');
+    setCopiedCard(true);
+    toast.success('شماره کارت فروشگاه کپی شد');
+    setTimeout(() => setCopiedCard(false), 2500);
+  };
+
   const handleUploadReceipt = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!receiptFile) {
@@ -58,11 +65,11 @@ export default function OrderDetailPage() {
     }
     setUploadingReceipt(true);
     try {
-      await ordersService.uploadReceipt(id, receiptFile, trackingNumber.trim() || undefined, receiptNotes.trim() || undefined);
+      await ordersService.uploadReceipt(id, receiptFile);
       toast.success('فیش پرداخت با موفقیت ثبت شد و در انتظار تأیید مدیریت قرار گرفت.');
       setReceiptFile(null);
-      setTrackingNumber('');
-      setReceiptNotes('');
+
+
       const rData = await ordersService.getOrderReceipts(id);
       setReceipts(rData?.receipts || []);
       const updatedOrder = await ordersService.getOrderById(id);
@@ -141,16 +148,115 @@ export default function OrderDetailPage() {
   );
 
   const handleDownloadInvoice = () => {
-    const invoiceText = `فاکتور فروشگاه سودانه\nشماره سفارش: ${order.orderNumber}\nتاریخ: ${orderDateStr} ساعت ${orderTimeStr}\nمبلغ کل: ${order.totalAmount} تومان\nاقلام:\n` +
-      order.items.map((i) => `- ${i.productName} (تعداد: ${i.quantity}) - ${i.totalPrice} تومان`).join('\n');
-    const blob = new Blob([invoiceText], { type: 'text/plain;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `factor-sodaneh-${order.orderNumber}.txt`;
-    a.click();
-    URL.revokeObjectURL(url);
-    toast.success('فاکتور سفارش دانلود شد');
+    if (!order) return;
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+      toast.error('لطفاً باز شدن پنجره‌های پاپ‌آپ را در مرورگر مجاز کنید.');
+      return;
+    }
+    const html = `<!DOCTYPE html>
+<html dir="rtl" lang="fa">
+<head>
+  <meta charset="utf-8">
+  <title>فاکتور سفارش ${order.orderNumber} - سودانه</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: Tahoma, Vazirmatn, system-ui, sans-serif; }
+    body { background-color: #f8faf9; color: #1c2b23; padding: 24px; font-size: 13px; line-height: 1.6; }
+    .invoice-card { max-width: 800px; margin: 0 auto; background: #fff; border: 1px solid #e1e7e4; border-radius: 12px; padding: 32px; box-shadow: 0 4px 20px rgba(0,0,0,0.04); }
+    .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #2f9467; padding-bottom: 18px; margin-bottom: 24px; }
+    .brand { font-size: 22px; font-weight: 900; color: #166543; }
+    .brand small { display: block; font-size: 11px; font-weight: normal; color: #64746b; margin-top: 4px; }
+    .badge { background: #e8f5ee; color: #166543; font-weight: bold; padding: 5px 14px; border-radius: 20px; font-size: 12px; }
+    .meta-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; margin-bottom: 24px; background: #fbfdfc; border: 1px solid #edf2ef; border-radius: 8px; padding: 16px; }
+    .meta-item { display: flex; justify-content: space-between; font-size: 12px; }
+    .meta-label { color: #64746b; }
+    .meta-val { font-weight: 700; color: #1c2b23; }
+    table { width: 100%; border-collapse: collapse; margin-bottom: 24px; }
+    th { background: #f2f7f4; color: #2c4436; font-weight: 700; text-align: right; padding: 10px 12px; font-size: 12px; border-bottom: 1px solid #e1e7e4; }
+    td { padding: 11px 12px; border-bottom: 1px solid #edf2ef; font-size: 12px; }
+    .num { text-align: center; }
+    .currency { text-align: left; direction: ltr; }
+    .totals { margin-right: auto; max-width: 320px; border-top: 1px solid #e1e7e4; padding-top: 10px; }
+    .totals-row { display: flex; justify-content: space-between; padding: 5px 0; font-size: 12px; color: #4b5d53; }
+    .totals-row.final { border-top: 2px solid #2f9467; margin-top: 6px; padding-top: 10px; font-size: 14px; font-weight: 900; color: #166543; }
+    .footer { text-align: center; color: #84938a; font-size: 11px; margin-top: 36px; border-top: 1px dashed #d5ded9; padding-top: 16px; }
+    .actions { text-align: center; margin-bottom: 20px; }
+    .btn-print { background: #2f9467; color: white; border: none; padding: 10px 24px; border-radius: 8px; font-size: 13px; font-weight: bold; cursor: pointer; }
+    .btn-print:hover { background: #237450; }
+    @media print {
+      body { background: white; padding: 0; }
+      .invoice-card { border: none; box-shadow: none; padding: 0; max-width: 100%; }
+      .actions { display: none !important; }
+    }
+  </style>
+</head>
+<body>
+  <div class="actions">
+    <button class="btn-print" onclick="window.print()">🖨️ چاپ یا ذخیره به صورت PDF</button>
+  </div>
+  <div class="invoice-card">
+    <div class="header">
+      <div>
+        <div class="brand">فروشگاه سودانه</div>
+        <small>ارائه محصولات تازه و ارگانیک | sodaneh.ir</small>
+      </div>
+      <div>
+        <span class="badge">فاکتور رسمی فروش</span>
+      </div>
+    </div>
+    <div class="meta-grid">
+      <div class="meta-item"><span class="meta-label">شماره سفارش:</span><span class="meta-val" dir="ltr">${order.orderNumber}</span></div>
+      <div class="meta-item"><span class="meta-label">تاریخ ثبت:</span><span class="meta-val">${orderDateStr} ساعت ${orderTimeStr}</span></div>
+      <div class="meta-item"><span class="meta-label">نام خریدار:</span><span class="meta-val">${order.customerName || 'مشتری'}</span></div>
+      <div class="meta-item"><span class="meta-label">شماره تماس:</span><span class="meta-val" dir="ltr">${order.customerPhone || '—'}</span></div>
+      <div class="meta-item"><span class="meta-label">روش پرداخت:</span><span class="meta-val">${order.paymentMethod === 'BANK_TRANSFER' ? 'کارت به کارت / فیش' : order.paymentMethod === 'CASH_ON_DELIVERY' ? 'پرداخت در محل' : 'پرداخت آنلاین'}</span></div>
+      <div class="meta-item"><span class="meta-label">نشانی تحویل:</span><span class="meta-val">${order.shippingAddress?.street ? `${order.shippingAddress.city || ''} - ${order.shippingAddress.street}` : '—'}</span></div>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th style="width: 36px;" class="num">#</th>
+          <th>نام کالا</th>
+          <th style="width: 70px;" class="num">تعداد</th>
+          <th style="width: 120px;" class="currency">قیمت واحد</th>
+          <th style="width: 130px;" class="currency">مبلغ کل</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${order.items.map((it, idx) => `
+          <tr>
+            <td class="num">${idx + 1}</td>
+            <td style="font-weight: 600;">${it.productName}</td>
+            <td class="num">${it.quantity}</td>
+            <td class="currency">${toFa(it.unitPrice)} تومان</td>
+            <td class="currency" style="font-weight: 700;">${toFa(it.totalPrice)} تومان</td>
+          </tr>
+        `).join('')}
+      </tbody>
+    </table>
+    <div class="totals">
+      <div class="totals-row"><span>جمع اقلام:</span><span dir="ltr">${toFa(order.subtotal || order.items.reduce((s, i) => s + Number(i.totalPrice), 0))} تومان</span></div>
+      ${order.shippingAmount ? `<div class="totals-row"><span>هزینه ارسال:</span><span dir="ltr">${toFa(order.shippingAmount)} تومان</span></div>` : ''}
+      ${order.taxAmount ? `<div class="totals-row"><span>مالیات:</span><span dir="ltr">${toFa(order.taxAmount)} تومان</span></div>` : ''}
+      ${order.discountAmount ? `<div class="totals-row" style="color: #2f9467;"><span>تخفیف:</span><span dir="ltr">− ${toFa(order.discountAmount)} تومان</span></div>` : ''}
+      ${order.walletAmountPaid ? `<div class="totals-row" style="color: #2f9467;"><span>پرداخت از کیف پول:</span><span dir="ltr">− ${toFa(order.walletAmountPaid)} تومان</span></div>` : ''}
+      <div class="totals-row final"><span>مبلغ نهایی:</span><span dir="ltr">${toFa(order.totalAmount)} تومان</span></div>
+    </div>
+    <div class="footer">
+      از خرید شما از فروشگاه سودانه سپاسگزاریم • پشتیبانی و پیگیری: sodaneh.ir
+    </div>
+  </div>
+  <script>
+    window.onload = function() {
+      setTimeout(function() { window.print(); }, 400);
+    };
+  <\/script>
+</body>
+</html>`;
+    printWindow.document.open();
+    printWindow.document.write(html);
+    printWindow.document.close();
+    toast.success('پیش‌نمایش فاکتور باز شد');
   };
 
   return (
@@ -327,7 +433,27 @@ export default function OrderDetailPage() {
             <div className="bg-white rounded-[12px] border border-sn-line/60 p-3 space-y-2 text-xs">
               <div className="flex items-center justify-between">
                 <span className="text-[#6b7b73]">شماره کارت بانکی:</span>
-                <span className="font-mono font-bold tracking-wider text-sn-text text-[13px]" dir="ltr">۶۰۳۷-۹۹۷۵-۸۸۲۱-۳۴۵۶</span>
+                <div className="flex items-center gap-2">
+                  <span className="font-mono font-bold tracking-wider text-sn-text text-[13px]" dir="ltr">۶۰۳۷-۹۹۷۵-۸۸۲۱-۳۴۵۶</span>
+                  <button
+                    type="button"
+                    onClick={handleCopyCard}
+                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-[8px] bg-[#f0f7f3] text-sn-green hover:bg-[#e2f1e8] active:scale-95 transition-all text-[11px] font-bold cursor-pointer"
+                    title="کپی شماره کارت"
+                  >
+                    {copiedCard ? (
+                      <>
+                        <Check size={13} className="text-emerald-600" />
+                        <span className="text-emerald-700">کپی شد</span>
+                      </>
+                    ) : (
+                      <>
+                        <Copy size={13} />
+                        <span>کپی</span>
+                      </>
+                    )}
+                  </button>
+                </div>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-[#6b7b73]">صاحب حساب:</span>
@@ -384,54 +510,79 @@ export default function OrderDetailPage() {
               </div>
             )}
 
-            {/* Upload Form */}
+            {/* Upload Form - Clean, Minimal & Effortless UI */}
             {order.paymentStatus !== 'PAID' && (
               <form onSubmit={handleUploadReceipt} className="mt-4 pt-3 border-t border-[#d8ebe0] space-y-3">
-                <h3 className="text-[11px] font-bold text-sn-text flex items-center gap-1.5">
-                  <UploadCloud size={15} className="text-sn-green" />
-                  {receipts.length > 0 ? 'ارسال مجدد فیش یا رسید جدید' : 'بارگذاری فیش واریز'}
-                </h3>
-
-                <div>
-                  <label className="block text-[10px] text-[#6b7b73] mb-1">تصویر یا فایل PDF فیش *</label>
-                  <input
-                    type="file"
-                    accept="image/png,image/jpeg,image/webp,application/pdf"
-                    required
-                    onChange={(e) => setReceiptFile(e.target.files?.[0] || null)}
-                    className="block w-full text-[11px] text-[#556960] file:mr-2 file:py-1.5 file:px-3 file:rounded-[8px] file:border-0 file:text-[10px] file:font-semibold file:bg-sn-green file:text-white hover:file:opacity-90 cursor-pointer"
-                  />
+                <div className="flex items-center justify-between">
+                  <h3 className="text-[12px] font-bold text-sn-text flex items-center gap-1.5">
+                    <UploadCloud size={16} className="text-sn-green" />
+                    {receipts.length > 0 ? 'ارسال مجدد فیش یا رسید جدید' : 'بارگذاری فیش واریز'}
+                  </h3>
+                  <span className="text-[10px] text-[#8e9d95]">تصویر یا PDF</span>
                 </div>
 
-                <div>
-                  <label className="block text-[10px] text-[#6b7b73] mb-1">شماره پیگیری یا شماره ارجاع تراکنش</label>
-                  <input
-                    type="text"
-                    value={trackingNumber}
-                    onChange={(e) => setTrackingNumber(e.target.value)}
-                    placeholder="مثلاً: ۱۲۳۴۵۶۷۸"
-                    className="w-full h-8 px-2.5 rounded-[8px] border border-sn-line text-xs font-mono text-left"
-                    dir="ltr"
-                  />
-                </div>
+                {!receiptFile ? (
+                  <label className="group relative flex flex-col items-center justify-center p-5 border-2 border-dashed border-[#a8d3bc] hover:border-sn-green bg-[#f7fbf8] hover:bg-[#eff7f2] rounded-[14px] cursor-pointer transition-all duration-200">
+                    <input
+                      type="file"
+                      accept="image/png,image/jpeg,image/webp,application/pdf"
+                      required
+                      onChange={(e) => setReceiptFile(e.target.files?.[0] || null)}
+                      className="sr-only"
+                    />
+                    <div className="w-10 h-10 rounded-full bg-[#e3f2e9] text-sn-green flex items-center justify-center mb-2 group-hover:scale-105 transition-transform">
+                      <UploadCloud size={20} />
+                    </div>
+                    <span className="text-[12px] font-bold text-sn-text">
+                      برای انتخاب یا بارگذاری فیش ضربه بزنید
+                    </span>
+                    <span className="text-[10px] text-[#7d8f85] mt-1">
+                      فرمت‌های مجاز: JPG, PNG, WEBP یا PDF (تا ۱۰ مگابایت)
+                    </span>
+                  </label>
+                ) : (
+                  <div className="p-3.5 rounded-[12px] bg-[#f0f8f3] border border-[#a4d7ba] flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-2.5 overflow-hidden">
+                      <div className="w-9 h-9 rounded-[8px] bg-sn-green/10 text-sn-green flex items-center justify-center shrink-0">
+                        <FileText size={18} />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-[11.5px] font-bold text-sn-text truncate">
+                          {receiptFile.name}
+                        </p>
+                        <p className="text-[10px] text-[#71847a]">
+                          {(receiptFile.size / 1024).toFixed(1)} کیلوبایت • آماده ارسال
+                        </p>
+                      </div>
+                    </div>
 
-                <div>
-                  <label className="block text-[10px] text-[#6b7b73] mb-1">توضیحات یا یادداشت (اختیاری)</label>
-                  <input
-                    type="text"
-                    value={receiptNotes}
-                    onChange={(e) => setReceiptNotes(e.target.value)}
-                    placeholder="نام بانک، واریزکننده یا ساعت انتقال..."
-                    className="w-full h-8 px-2.5 rounded-[8px] border border-sn-line text-xs text-right"
-                  />
-                </div>
+                    <button
+                      type="button"
+                      onClick={() => setReceiptFile(null)}
+                      className="p-1.5 rounded-[8px] text-[#dc2626] hover:bg-red-100/60 active:scale-95 transition-all"
+                      title="حذف و انتخاب فایل دیگر"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
+                )}
 
                 <button
                   type="submit"
                   disabled={uploadingReceipt || !receiptFile}
-                  className="w-full h-9 rounded-[10px] bg-sn-green text-white font-bold text-xs hover:opacity-90 active:scale-98 transition-all flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed shadow-none"
+                  className="w-full h-[44px] rounded-[10px] bg-sn-green hover:bg-[#116949] text-white font-bold text-[12.5px] active:scale-98 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed shadow-none"
                 >
-                  {uploadingReceipt ? 'در حال ارسال فیش...' : 'ثبت و ارسال فیش برای حسابداری'}
+                  {uploadingReceipt ? (
+                    <>
+                      <Clock size={15} className="animate-spin" />
+                      <span>در حال ارسال فیش...</span>
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle2 size={16} />
+                      <span>ارسال فیش واریزی</span>
+                    </>
+                  )}
                 </button>
               </form>
             )}
