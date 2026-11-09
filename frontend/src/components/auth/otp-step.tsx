@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import { OTPInput } from 'input-otp';
 import { toEnglishDigits } from '@/services/auth.service';
 import { toFa, cn } from '@/lib/utils';
 
@@ -27,11 +28,6 @@ export function OtpStep({
 }: OtpStepProps) {
   const [value, setValue] = useState(code || '');
   const [countdown, setCountdown] = useState(60);
-  const [isFocused, setIsFocused] = useState(false);
-  const inputRef = useRef<HTMLInputElement>(null);
-  const abortControllerRef = useRef<AbortController | null>(null);
-  const lastValRef = useRef(value);
-  lastValRef.current = value;
 
   // Sync external code prop with internal value
   useEffect(() => {
@@ -66,81 +62,6 @@ export function OtpStep({
     return () => clearInterval(interval);
   }, [phone]);
 
-  // Focus input on mount
-  useEffect(() => {
-    inputRef.current?.focus();
-  }, []);
-
-  // WebOTP API: native automatic SMS code reading on Android Chrome
-  useEffect(() => {
-    if (typeof window === 'undefined' || !('OTPCredential' in window) || !navigator.credentials) {
-      return;
-    }
-
-    const ac = new AbortController();
-    abortControllerRef.current = ac;
-
-    navigator.credentials
-      .get({
-        otp: { transport: ['sms'] },
-        signal: ac.signal,
-      } as any)
-      .then((content: any) => {
-        const raw =
-          content?.code ||
-          (content as any)?.id ||
-          (typeof content === 'string' ? content : '') ||
-          '';
-        const match = toEnglishDigits(String(raw)).match(/\d{5}/);
-        const clean = match ? match[0] : toEnglishDigits(String(raw)).replace(/\D/g, '').slice(0, 5);
-        if (clean) {
-          handleInputChange(clean);
-        }
-      })
-      .catch(() => {
-        // Silently ignore abort or user dismissal
-      });
-
-    return () => {
-      ac.abort();
-    };
-  }, [phone]);
-
-  // Intercept Android Autofill & Password Managers:
-  // Listen directly to native DOM input/change events AND poll the DOM value
-  useEffect(() => {
-    const input = inputRef.current;
-    if (!input) return;
-
-    const onNativeChange = () => {
-      if (input.value) {
-        const clean = toEnglishDigits(input.value).replace(/\D/g, '').slice(0, 5);
-        if (clean !== lastValRef.current) {
-          handleInputChange(clean);
-        }
-      }
-    };
-
-    input.addEventListener('input', onNativeChange);
-    input.addEventListener('change', onNativeChange);
-
-    // High frequency interval (every 80ms) to immediately catch Android Autofill direct property mutation
-    const interval = setInterval(() => {
-      if (input.value) {
-        const clean = toEnglishDigits(input.value).replace(/\D/g, '').slice(0, 5);
-        if (clean && clean !== lastValRef.current) {
-          handleInputChange(clean);
-        }
-      }
-    }, 80);
-
-    return () => {
-      input.removeEventListener('input', onNativeChange);
-      input.removeEventListener('change', onNativeChange);
-      clearInterval(interval);
-    };
-  }, [isLoading]);
-
   const handleAutoFillDevCode = () => {
     if (!devCode) return;
     const clean = devCode.slice(0, 5);
@@ -152,7 +73,6 @@ export function OtpStep({
     setValue('');
     onChangeCode('');
     onResend();
-    inputRef.current?.focus();
   };
 
   const isComplete = value.length === 5;
@@ -210,66 +130,58 @@ export function OtpStep({
         </div>
       )}
 
-      {/* 5 Digit Unified Input for 100% reliable Android / iOS Autofill */}
+      {/* 5 Digit OTP Input powered by input-otp */}
       <form
         onSubmit={(e) => {
           e.preventDefault();
           if (isComplete && !isLoading) onSubmit(value);
         }}
-        className="mt-6 flex flex-col"
+        className="mt-6 flex flex-col items-center"
         noValidate
       >
-        <div className="relative flex justify-center w-full max-w-[280px] mx-auto">
-          {/*
-            Fully visible to Chromium & Android Autofill engine (opacity: 1)
-            but with transparent text/bg so the visual slots underneath shine through.
-          */}
-          <input
-            ref={inputRef}
-            id="otp-input"
-            name="one-time-code"
-            type="text"
-            inputMode="numeric"
-            autoComplete="one-time-code"
-            pattern="[0-9]*"
+        <div className="w-full flex justify-center">
+          <OTPInput
             maxLength={5}
             value={value}
-            onChange={(e) => handleInputChange(e.target.value)}
-            onFocus={() => setIsFocused(true)}
-            onBlur={() => setIsFocused(false)}
-            className="absolute inset-0 w-full h-full opacity-100 text-transparent bg-transparent caret-transparent z-20 cursor-pointer border-0 outline-none select-none"
-            aria-label="کد تأیید ۵ رقمی"
+            onChange={handleInputChange}
             autoFocus
+            pattern="^[0-9۰-۹]+$"
+            inputMode="numeric"
+            autoComplete="one-time-code"
+            pasteTransformer={(pasted) => toEnglishDigits(pasted).replace(/\D/g, '').slice(0, 5)}
+            containerClassName="flex items-center justify-center w-full"
+            onComplete={(completedCode) => {
+              const clean = toEnglishDigits(completedCode).replace(/\D/g, '').slice(0, 5);
+              if (clean.length === 5 && !isLoading) {
+                onSubmit(clean);
+              }
+            }}
+            render={({ slots }) => (
+              <div dir="ltr" className="flex justify-between w-full max-w-[280px] gap-2">
+                {slots.map((slot, i) => (
+                  <div
+                    key={i}
+                    className={cn(
+                      'relative w-[48px] h-[54px] rounded-[10px] border bg-white flex items-center justify-center text-[24px] font-black text-sn-green transition-all shadow-2xs select-none',
+                      slot.char ? 'border-sn-green bg-[#f7fbf9]' : 'border-[#dfe6e2]',
+                      slot.isActive && 'ring-2 ring-sn-green/30 border-sn-green'
+                    )}
+                  >
+                    {slot.char}
+                    {slot.hasFakeCaret && (
+                      <div className="pointer-events-none absolute h-6 w-0.5 animate-pulse bg-sn-green" />
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
           />
-
-          {/* 5 Visual Digit Display Slots */}
-          <div dir="ltr" className="flex justify-between w-full gap-2 pointer-events-none">
-            {Array.from({ length: 5 }).map((_, i) => {
-              const char = value[i] || '';
-              const isCurrent = isFocused && i === Math.min(value.length, 4);
-
-              return (
-                <div
-                  key={i}
-                  className={cn(
-                    'w-[48px] h-[54px] rounded-[10px] border bg-white flex items-center justify-center text-[24px] font-black text-sn-green transition-all shadow-2xs select-none',
-                    char
-                      ? 'border-sn-green bg-[#f7fbf9]'
-                      : 'border-[#dfe6e2]',
-                    isCurrent && 'ring-2 ring-sn-green/30 border-sn-green'
-                  )}
-                >
-                  {char}
-                </div>
-              );
-            })}
-          </div>
         </div>
 
         <button
           type="submit"
           disabled={!isComplete || isLoading}
-          className={`mt-6 min-h-[51px] rounded-[10px] text-[13px] font-extrabold text-white transition-all active:scale-[0.99] flex items-center justify-center ${
+          className={`mt-6 w-full max-w-[280px] min-h-[51px] rounded-[10px] text-[13px] font-extrabold text-white transition-all active:scale-[0.99] flex items-center justify-center ${
             isComplete && !isLoading
               ? 'bg-sn-green hover:bg-[#0f6847] cursor-pointer shadow-sm'
               : 'bg-[#d6dfda] cursor-default'
