@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useEffect, useRef, useState, useCallback } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { toEnglishDigits } from '@/services/auth.service';
-import { toFa } from '@/lib/utils';
+import { toFa, cn } from '@/lib/utils';
 
 interface OtpStepProps {
   phone: string;
@@ -25,9 +25,18 @@ export function OtpStep({
   onBack,
   isLoading = false,
 }: OtpStepProps) {
-  const [digits, setDigits] = useState<string[]>(['', '', '', '', '']);
+  const [value, setValue] = useState(code || '');
   const [countdown, setCountdown] = useState(60);
-  const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
+  const [isFocused, setIsFocused] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
+
+  // Sync external code prop with internal value
+  useEffect(() => {
+    if (code !== undefined && code !== value) {
+      setValue(code);
+    }
+  }, [code]);
 
   // Initialize countdown
   useEffect(() => {
@@ -44,28 +53,19 @@ export function OtpStep({
     return () => clearInterval(interval);
   }, [phone]);
 
-  // Sync external code with internal digits if needed
+  // Focus input on mount
   useEffect(() => {
-    if (code) {
-      const parts = code.split('').slice(0, 5);
-      const newDigits = ['', '', '', '', ''];
-      parts.forEach((d, i) => (newDigits[i] = d));
-      setDigits(newDigits);
-    }
-  }, [code]);
-
-  // Auto-focus first input
-  useEffect(() => {
-    inputRefs.current[0]?.focus();
+    inputRef.current?.focus();
   }, []);
 
-  // WebOTP API for Android / Chrome automatic SMS reading
+  // WebOTP API: native automatic SMS code reading on Android Chrome
   useEffect(() => {
     if (typeof window === 'undefined' || !('OTPCredential' in window) || !navigator.credentials) {
       return;
     }
 
     const ac = new AbortController();
+    abortControllerRef.current = ac;
 
     navigator.credentials
       .get({
@@ -73,115 +73,52 @@ export function OtpStep({
         signal: ac.signal,
       } as any)
       .then((content: any) => {
-        if (content && content.code) {
-          const clean = toEnglishDigits(content.code).replace(/\D/g, '').slice(0, 5);
-          if (clean.length === 5) {
-            const parts = clean.split('');
-            setDigits(parts);
-            onChangeCode(clean);
-            if (!isLoading) {
-              onSubmit(clean);
-            }
+        const raw = content?.code || (typeof content === 'string' ? content : '') || '';
+        const clean = toEnglishDigits(String(raw)).replace(/\D/g, '').slice(0, 5);
+        if (clean) {
+          setValue(clean);
+          onChangeCode(clean);
+          if (clean.length === 5 && !isLoading) {
+            onSubmit(clean);
           }
         }
       })
       .catch(() => {
-        // Ignored: aborted when component unmounts or user cancels
+        // Silently ignore abort or user dismissal
       });
 
     return () => {
       ac.abort();
     };
-  }, [phone, isLoading, onChangeCode, onSubmit]);
+  }, [phone]); // Only run on phone change, never abort on countdown or re-renders
 
-  const handleDigitChange = (index: number, value: string) => {
-    const clean = toEnglishDigits(value).replace(/\D/g, '');
+  const handleInputChange = (raw: string) => {
+    const clean = toEnglishDigits(raw).replace(/\D/g, '').slice(0, 5);
+    setValue(clean);
+    onChangeCode(clean);
 
-    // Handle mobile SMS auto-fill or multiple digits paste in a single box
-    if (clean.length > 1) {
-      const parts = clean.slice(0, 5).split('');
-      const newDigits = ['', '', '', '', ''];
-      parts.forEach((d, i) => {
-        newDigits[i] = d;
-      });
-      setDigits(newDigits);
-
-      const fullCode = newDigits.join('');
-      onChangeCode(fullCode);
-
-      const focusIndex = Math.min(parts.length, 4);
-      inputRefs.current[focusIndex]?.focus();
-
-      if (parts.length === 5 && !isLoading) {
-        onSubmit(fullCode);
-      }
-      return;
-    }
-
-    const singleDigit = clean.slice(-1);
-    const newDigits = [...digits];
-    newDigits[index] = singleDigit;
-    setDigits(newDigits);
-
-    const fullCode = newDigits.join('');
-    onChangeCode(fullCode);
-
-    if (singleDigit && index < 4) {
-      inputRefs.current[index + 1]?.focus();
-    }
-
-    if (fullCode.length === 5 && !isLoading) {
-      onSubmit(fullCode);
-    }
-  };
-
-  const handleKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Backspace' && !digits[index] && index > 0) {
-      inputRefs.current[index - 1]?.focus();
-    }
-  };
-
-  const handlePaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
-    e.preventDefault();
-    const pasted = toEnglishDigits(e.clipboardData.getData('text')).replace(/\D/g, '').slice(0, 5);
-    if (!pasted) return;
-
-    const newDigits = ['', '', '', '', ''];
-    pasted.split('').forEach((d, i) => {
-      newDigits[i] = d;
-    });
-    setDigits(newDigits);
-    const fullCode = newDigits.join('');
-    onChangeCode(fullCode);
-
-    const focusIndex = Math.min(pasted.length, 4);
-    inputRefs.current[focusIndex]?.focus();
-
-    if (pasted.length === 5 && !isLoading) {
-      onSubmit(fullCode);
+    if (clean.length === 5 && !isLoading) {
+      onSubmit(clean);
     }
   };
 
   const handleAutoFillDevCode = () => {
     if (!devCode) return;
-    const parts = devCode.split('').slice(0, 5);
-    const newDigits = ['', '', '', '', ''];
-    parts.forEach((d, i) => (newDigits[i] = d));
-    setDigits(newDigits);
-    onChangeCode(devCode);
-    onSubmit(devCode);
+    const clean = devCode.slice(0, 5);
+    setValue(clean);
+    onChangeCode(clean);
+    onSubmit(clean);
   };
 
   const handleResendClick = () => {
     setCountdown(60);
-    setDigits(['', '', '', '', '']);
+    setValue('');
     onChangeCode('');
     onResend();
-    inputRefs.current[0]?.focus();
+    inputRef.current?.focus();
   };
 
-  const fullCode = digits.join('');
-  const isComplete = fullCode.length === 5;
+  const isComplete = value.length === 5;
 
   return (
     <div className="flex flex-col text-center">
@@ -202,7 +139,7 @@ export function OtpStep({
         <button
           type="button"
           onClick={onBack}
-          className="mt-2 text-[11px] text-sn-green underline underline-offset-4 hover:text-[#0f6847] transition-colors"
+          className="mt-2 text-[11px] text-sn-green underline underline-offset-4 hover:text-[#0f6847] transition-colors cursor-pointer"
         >
           ویرایش شماره
         </button>
@@ -215,7 +152,10 @@ export function OtpStep({
             <span className="text-[10.5px] font-bold text-amber-800">
               ⚡ حالت توسعه محلی (Local Dev)
             </span>
-            <span className="font-black text-amber-950 text-[14px] tracking-widest px-2 py-0.5 rounded bg-amber-200/60" dir="ltr">
+            <span
+              className="font-black text-amber-950 text-[14px] tracking-widest px-2 py-0.5 rounded bg-amber-200/60"
+              dir="ltr"
+            >
               {devCode}
             </span>
           </div>
@@ -233,34 +173,54 @@ export function OtpStep({
         </div>
       )}
 
-      {/* 5 Digit Boxes in LTR */}
+      {/* 5 Digit Unified Input for 100% reliable Android / iOS Autofill */}
       <form
         onSubmit={(e) => {
           e.preventDefault();
-          if (isComplete && !isLoading) onSubmit(fullCode);
+          if (isComplete && !isLoading) onSubmit(value);
         }}
         className="mt-6 flex flex-col"
         noValidate
       >
-        <div dir="ltr" className="flex justify-center gap-2">
-          {digits.map((digit, i) => (
-            <input
-              key={i}
-              ref={(el) => {
-                inputRefs.current[i] = el;
-              }}
-              type="tel"
-              inputMode="numeric"
-              maxLength={i === 0 ? 5 : 1}
-              autoComplete={i === 0 ? 'one-time-code' : 'off'}
-              value={digit}
-              onChange={(e) => handleDigitChange(i, e.target.value)}
-              onKeyDown={(e) => handleKeyDown(i, e)}
-              onPaste={handlePaste}
-              className="w-[48px] h-[54px] border border-[#dfe6e2] rounded-[9px] bg-white text-center text-[22px] font-extrabold text-sn-green outline-none transition-all focus:border-sn-green focus:ring-1 focus:ring-sn-green"
-              aria-label={`رقم ${i + 1}`}
-            />
-          ))}
+        <div className="relative flex justify-center w-full max-w-[280px] mx-auto">
+          {/* Actual underlying transparent input capturing native autofill and keystrokes */}
+          <input
+            ref={inputRef}
+            type="tel"
+            inputMode="numeric"
+            autoComplete="one-time-code"
+            maxLength={5}
+            value={value}
+            onChange={(e) => handleInputChange(e.target.value)}
+            onFocus={() => setIsFocused(true)}
+            onBlur={() => setIsFocused(false)}
+            className="absolute inset-0 w-full h-full opacity-0 z-20 cursor-pointer"
+            aria-label="کد تأیید ۵ رقمی"
+            autoFocus
+          />
+
+          {/* 5 Visual Digit Display Slots */}
+          <div dir="ltr" className="flex justify-between w-full gap-2 pointer-events-none">
+            {Array.from({ length: 5 }).map((_, i) => {
+              const char = value[i] || '';
+              const isCurrent = isFocused && i === Math.min(value.length, 4);
+
+              return (
+                <div
+                  key={i}
+                  className={cn(
+                    'w-[48px] h-[54px] rounded-[10px] border bg-white flex items-center justify-center text-[24px] font-black text-sn-green transition-all shadow-2xs select-none',
+                    char
+                      ? 'border-sn-green bg-[#f7fbf9]'
+                      : 'border-[#dfe6e2]',
+                    isCurrent && 'ring-2 ring-sn-green/30 border-sn-green'
+                  )}
+                >
+                  {char}
+                </div>
+              );
+            })}
+          </div>
         </div>
 
         <button
@@ -291,7 +251,7 @@ export function OtpStep({
             type="button"
             onClick={handleResendClick}
             disabled={isLoading}
-            className="text-sn-green font-bold underline underline-offset-4 hover:text-[#0f6847] transition-colors"
+            className="text-sn-green font-bold underline underline-offset-4 hover:text-[#0f6847] transition-colors cursor-pointer"
           >
             ارسال مجدد کد
           </button>
