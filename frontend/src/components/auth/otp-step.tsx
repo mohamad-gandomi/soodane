@@ -30,6 +30,8 @@ export function OtpStep({
   const [isFocused, setIsFocused] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
+  const lastValRef = useRef(value);
+  lastValRef.current = value;
 
   // Sync external code prop with internal value
   useEffect(() => {
@@ -37,6 +39,17 @@ export function OtpStep({
       setValue(code);
     }
   }, [code]);
+
+  // Central handler for code changes
+  const handleInputChange = (raw: string) => {
+    const clean = toEnglishDigits(raw).replace(/\D/g, '').slice(0, 5);
+    setValue(clean);
+    onChangeCode(clean);
+
+    if (clean.length === 5 && !isLoading) {
+      onSubmit(clean);
+    }
+  };
 
   // Initialize countdown
   useEffect(() => {
@@ -73,14 +86,15 @@ export function OtpStep({
         signal: ac.signal,
       } as any)
       .then((content: any) => {
-        const raw = content?.code || (typeof content === 'string' ? content : '') || '';
-        const clean = toEnglishDigits(String(raw)).replace(/\D/g, '').slice(0, 5);
+        const raw =
+          content?.code ||
+          (content as any)?.id ||
+          (typeof content === 'string' ? content : '') ||
+          '';
+        const match = toEnglishDigits(String(raw)).match(/\d{5}/);
+        const clean = match ? match[0] : toEnglishDigits(String(raw)).replace(/\D/g, '').slice(0, 5);
         if (clean) {
-          setValue(clean);
-          onChangeCode(clean);
-          if (clean.length === 5 && !isLoading) {
-            onSubmit(clean);
-          }
+          handleInputChange(clean);
         }
       })
       .catch(() => {
@@ -90,24 +104,47 @@ export function OtpStep({
     return () => {
       ac.abort();
     };
-  }, [phone]); // Only run on phone change, never abort on countdown or re-renders
+  }, [phone]);
 
-  const handleInputChange = (raw: string) => {
-    const clean = toEnglishDigits(raw).replace(/\D/g, '').slice(0, 5);
-    setValue(clean);
-    onChangeCode(clean);
+  // Intercept Android Autofill & Password Managers:
+  // Listen directly to native DOM input/change events AND poll the DOM value
+  useEffect(() => {
+    const input = inputRef.current;
+    if (!input) return;
 
-    if (clean.length === 5 && !isLoading) {
-      onSubmit(clean);
-    }
-  };
+    const onNativeChange = () => {
+      if (input.value) {
+        const clean = toEnglishDigits(input.value).replace(/\D/g, '').slice(0, 5);
+        if (clean !== lastValRef.current) {
+          handleInputChange(clean);
+        }
+      }
+    };
+
+    input.addEventListener('input', onNativeChange);
+    input.addEventListener('change', onNativeChange);
+
+    // High frequency interval (every 80ms) to immediately catch Android Autofill direct property mutation
+    const interval = setInterval(() => {
+      if (input.value) {
+        const clean = toEnglishDigits(input.value).replace(/\D/g, '').slice(0, 5);
+        if (clean && clean !== lastValRef.current) {
+          handleInputChange(clean);
+        }
+      }
+    }, 80);
+
+    return () => {
+      input.removeEventListener('input', onNativeChange);
+      input.removeEventListener('change', onNativeChange);
+      clearInterval(interval);
+    };
+  }, [isLoading]);
 
   const handleAutoFillDevCode = () => {
     if (!devCode) return;
     const clean = devCode.slice(0, 5);
-    setValue(clean);
-    onChangeCode(clean);
-    onSubmit(clean);
+    handleInputChange(clean);
   };
 
   const handleResendClick = () => {
@@ -183,18 +220,24 @@ export function OtpStep({
         noValidate
       >
         <div className="relative flex justify-center w-full max-w-[280px] mx-auto">
-          {/* Actual underlying transparent input capturing native autofill and keystrokes */}
+          {/*
+            Fully visible to Chromium & Android Autofill engine (opacity: 1)
+            but with transparent text/bg so the visual slots underneath shine through.
+          */}
           <input
             ref={inputRef}
-            type="tel"
+            id="otp-input"
+            name="one-time-code"
+            type="text"
             inputMode="numeric"
             autoComplete="one-time-code"
+            pattern="[0-9]*"
             maxLength={5}
             value={value}
             onChange={(e) => handleInputChange(e.target.value)}
             onFocus={() => setIsFocused(true)}
             onBlur={() => setIsFocused(false)}
-            className="absolute inset-0 w-full h-full opacity-0 z-20 cursor-pointer"
+            className="absolute inset-0 w-full h-full opacity-100 text-transparent bg-transparent caret-transparent z-20 cursor-pointer border-0 outline-none select-none"
             aria-label="کد تأیید ۵ رقمی"
             autoFocus
           />
