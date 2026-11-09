@@ -5,7 +5,7 @@ import { Sheet } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Category } from '@/types/product';
-import { cn } from '@/lib/utils';
+import { CategoryTreeFilter } from '@/components/catalog/category-tree-filter';
 
 interface FilterSheetProps {
   categories: Category[];
@@ -84,42 +84,17 @@ export function FilterSheet({
   return (
     <Sheet isOpen={isOpen} onClose={onClose} title="فیلتر پیشرفته کالاها">
       <div className="flex flex-col gap-4 pt-1">
-        {/* Categories selector */}
-        <div>
-          <p className="text-[10px] font-extrabold text-sn-text mb-2.5">
-            دسته‌بندی‌ها
-          </p>
-          <div className="flex flex-wrap gap-2">
-            {categories.map(category => {
-                const key = category.slug;
-                const label = category.name;
-                const checked = draftCategories.includes(key);
-                return (
-                  <label
-                    key={key}
-                    className={cn(
-                      'flex items-center gap-1.5 h-8 px-3 rounded-full border border-[#dfe8e2] text-[9.5px] cursor-pointer transition-colors',
-                      checked
-                        ? 'border-[#a8d7b9] bg-[#edf8f1] text-sn-green font-bold'
-                        : 'text-[#65766e]'
-                    )}
-                  >
-                    <input
-                      type="checkbox"
-                      checked={checked}
-                      onChange={() => toggleCategory(key)}
-                      className="accent-sn-green w-3.5 h-3.5 rounded"
-                    />
-                    <span>{label}</span>
-                  </label>
-                );
-              })}
-          </div>
-        </div>
+        {/* Hierarchical Categories Tree Selector */}
+        <CategoryTreeFilter
+          categories={categories}
+          selectedCategories={draftCategories}
+          onToggleCategory={toggleCategory}
+          onClearCategories={() => setDraftCategories([])}
+        />
 
         {/* Price range */}
         <div>
-          <p className="text-[10px] font-extrabold text-sn-text mb-2.5">
+          <p className="text-[10.5px] font-extrabold text-sn-text mb-2">
             بازه قیمت (تومان)
           </p>
           <div className="grid grid-cols-2 gap-2">
@@ -142,7 +117,7 @@ export function FilterSheet({
 
         {/* Quick toggles */}
         <div className="flex flex-col border-t border-sn-line/60 pt-1">
-          <label className="flex items-center justify-between h-10 border-b border-[#eff2f0] text-[10px] font-medium text-[#52665b] cursor-pointer">
+          <label className="flex items-center justify-between h-9.5 border-b border-[#eff2f0] text-[10.5px] font-medium text-[#52665b] cursor-pointer">
             <span>فقط کالاهای تخفیف‌دار</span>
             <input
               type="checkbox"
@@ -152,7 +127,7 @@ export function FilterSheet({
             />
           </label>
 
-          <label className="flex items-center justify-between h-10 text-[10px] font-medium text-[#52665b] cursor-pointer">
+          <label className="flex items-center justify-between h-9.5 text-[10.5px] font-medium text-[#52665b] cursor-pointer">
             <span>دارای پاداش خرید</span>
             <input
               type="checkbox"
