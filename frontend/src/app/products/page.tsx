@@ -1,12 +1,12 @@
 'use client';
 
 import React, { useState, useEffect, useMemo, Suspense } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { AppShell } from '@/components/layout/app-shell';
 import { TopPromo } from '@/components/layout/top-promo';
 import { TopHeader } from '@/components/layout/top-header';
 import { BottomNav } from '@/components/layout/bottom-nav';
-import { PromoSlider } from '@/components/home/promo-slider';
+import { CatalogCategoriesScroll } from '@/components/catalog/catalog-categories-scroll';
 import { FilterBar } from '@/components/catalog/filter-bar';
 import { FilterSheet } from '@/components/catalog/filter-sheet';
 import { SortSheet, SORT_OPTIONS } from '@/components/catalog/sort-sheet';
@@ -21,6 +21,7 @@ import { matchesProductCategories } from '@/lib/catalog';
 import { toFa } from '@/lib/utils';
 
 function ProductsCatalogContent() {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const initialCategory = searchParams.get('category');
 
@@ -61,13 +62,75 @@ function ProductsCatalogContent() {
     setSelectedCategories(initialCategory ? [initialCategory] : []);
   }, [initialCategory]);
 
+  // Root level categories (without parentId)
+  const rootCategories = useMemo(() => {
+    return categories.filter((c) => !c.parentId);
+  }, [categories]);
+
+  // Active category object from the first selected category slug/id
+  const activeCategoryObj = useMemo(() => {
+    if (selectedCategories.length === 0) return null;
+    const sel = selectedCategories[0];
+    return categories.find((c) => c.slug === sel || c.id === sel) || null;
+  }, [selectedCategories, categories]);
+
+  // Traverse up to find the root parent category
+  const activeRootCategory = useMemo(() => {
+    if (!activeCategoryObj) return null;
+    const byId = new Map(categories.map((c) => [c.id, c]));
+    let curr: Category | null = activeCategoryObj;
+    while (curr && curr.parentId) {
+      const parent = byId.get(curr.parentId);
+      if (!parent) break;
+      curr = parent;
+    }
+    return curr || activeCategoryObj;
+  }, [activeCategoryObj, categories]);
+
+  const activeRootSlug = activeRootCategory ? activeRootCategory.slug : null;
+
+  // Handler for top root categories horizontal scroll
+  const handleSelectRootCategory = (slug: string | null) => {
+    if (!slug) {
+      setSelectedCategories([]);
+      router.replace('/products', { scroll: false });
+    } else {
+      setSelectedCategories([slug]);
+      router.replace(`/products?category=${encodeURIComponent(slug)}`, { scroll: false });
+    }
+  };
+
+  // Handler for subcategories chip bar
   const handleSelectQuickCategory = (catKey: string) => {
     if (catKey === 'all') {
       setSelectedCategories([]);
+      router.replace('/products', { scroll: false });
     } else {
       setSelectedCategories([catKey]);
+      router.replace(`/products?category=${encodeURIComponent(catKey)}`, { scroll: false });
     }
   };
+
+  // Compute chips to show in FilterBar:
+  // When a root category is selected, ONLY show its subcategories (+ an 'All <RootName>' chip)
+  const subcategoryChips = useMemo(() => {
+    if (activeRootCategory) {
+      const directChildren = categories.filter((c) => c.parentId === activeRootCategory.id);
+      return [
+        {
+          id: activeRootCategory.id,
+          slug: activeRootCategory.slug,
+          name: `همه ${activeRootCategory.name}`,
+        },
+        ...directChildren,
+      ];
+    }
+    // When no category is selected, show root categories
+    return [
+      { id: 'all', slug: 'all', name: 'همه' },
+      ...rootCategories,
+    ];
+  }, [activeRootCategory, rootCategories, categories]);
 
   const filteredProducts = useMemo(() => {
     return products.filter((p) => {
@@ -140,7 +203,12 @@ function ProductsCatalogContent() {
 
   return (
     <>
-      <PromoSlider catalogMode />
+      {/* Horizontal Root Categories Scroll instead of top banner */}
+      <CatalogCategoriesScroll
+        categories={rootCategories}
+        activeRootSlug={activeRootSlug}
+        onSelectCategory={handleSelectRootCategory}
+      />
 
       {/* Live Search Input */}
       <div className="relative mb-3">
@@ -156,9 +224,9 @@ function ProductsCatalogContent() {
         </label>
       </div>
 
-      {/* Sticky Filter Bar */}
+      {/* Sticky Filter Bar with scoped subcategories */}
       <FilterBar
-        categories={categories}
+        categories={subcategoryChips}
         activeCategories={selectedCategories}
         onSelectCategory={handleSelectQuickCategory}
         onOpenFilterSheet={() => setIsFilterOpen(true)}

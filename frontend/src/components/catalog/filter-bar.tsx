@@ -53,13 +53,13 @@ export function FilterBar({
 
       {/* Horizontal scrollable category chips */}
       <div className="flex min-w-0 flex-1 gap-1.5 overflow-x-auto scrollbar-none">
-        {[{ id: 'all', slug: 'all', name: 'همه' }, ...categories].map(category => {
-          const key = category.slug;
+        {categories.map((category) => {
+          const key = category.slug || category.id;
           const label = category.name;
           const isActive =
             key === 'all'
-              ? activeCategories.length === 0
-              : activeCategories.includes(key);
+              ? activeCategories.length === 0 || activeCategories.includes('all')
+              : activeCategories.includes(category.slug) || activeCategories.includes(category.id);
 
           return (
             <button

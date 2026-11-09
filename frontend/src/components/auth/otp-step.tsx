@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { toEnglishDigits } from '@/services/auth.service';
 import { toFa } from '@/lib/utils';
 
@@ -59,16 +59,74 @@ export function OtpStep({
     inputRefs.current[0]?.focus();
   }, []);
 
+  // WebOTP API for Android / Chrome automatic SMS reading
+  useEffect(() => {
+    if (typeof window === 'undefined' || !('OTPCredential' in window) || !navigator.credentials) {
+      return;
+    }
+
+    const ac = new AbortController();
+
+    navigator.credentials
+      .get({
+        otp: { transport: ['sms'] },
+        signal: ac.signal,
+      } as any)
+      .then((content: any) => {
+        if (content && content.code) {
+          const clean = toEnglishDigits(content.code).replace(/\D/g, '').slice(0, 5);
+          if (clean.length === 5) {
+            const parts = clean.split('');
+            setDigits(parts);
+            onChangeCode(clean);
+            if (!isLoading) {
+              onSubmit(clean);
+            }
+          }
+        }
+      })
+      .catch(() => {
+        // Ignored: aborted when component unmounts or user cancels
+      });
+
+    return () => {
+      ac.abort();
+    };
+  }, [phone, isLoading, onChangeCode, onSubmit]);
+
   const handleDigitChange = (index: number, value: string) => {
-    const clean = toEnglishDigits(value).replace(/\D/g, '').slice(-1);
+    const clean = toEnglishDigits(value).replace(/\D/g, '');
+
+    // Handle mobile SMS auto-fill or multiple digits paste in a single box
+    if (clean.length > 1) {
+      const parts = clean.slice(0, 5).split('');
+      const newDigits = ['', '', '', '', ''];
+      parts.forEach((d, i) => {
+        newDigits[i] = d;
+      });
+      setDigits(newDigits);
+
+      const fullCode = newDigits.join('');
+      onChangeCode(fullCode);
+
+      const focusIndex = Math.min(parts.length, 4);
+      inputRefs.current[focusIndex]?.focus();
+
+      if (parts.length === 5 && !isLoading) {
+        onSubmit(fullCode);
+      }
+      return;
+    }
+
+    const singleDigit = clean.slice(-1);
     const newDigits = [...digits];
-    newDigits[index] = clean;
+    newDigits[index] = singleDigit;
     setDigits(newDigits);
 
     const fullCode = newDigits.join('');
     onChangeCode(fullCode);
 
-    if (clean && index < 4) {
+    if (singleDigit && index < 4) {
       inputRefs.current[index + 1]?.focus();
     }
 
@@ -193,7 +251,7 @@ export function OtpStep({
               }}
               type="tel"
               inputMode="numeric"
-              maxLength={1}
+              maxLength={i === 0 ? 5 : 1}
               autoComplete={i === 0 ? 'one-time-code' : 'off'}
               value={digit}
               onChange={(e) => handleDigitChange(i, e.target.value)}
