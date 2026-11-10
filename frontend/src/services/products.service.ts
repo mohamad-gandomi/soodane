@@ -1,8 +1,20 @@
 import { apiClient } from '@/lib/api-client';
 import { Product, ProductFilterParams } from '@/types/product';
 
+export function isProductAvailable(product: Product): boolean {
+  if (product.productType === 'VARIABLE') {
+    if (product.variants && product.variants.length > 0) {
+      return product.variants.some((v) => (v.stockQuantity ?? 0) > 0);
+    }
+  }
+  if (product.manageStock === true) {
+    return (product.stockQuantity ?? 0) > 0;
+  }
+  return true;
+}
+
 export const productsService = {
-  async getProducts(params?: ProductFilterParams): Promise<Product[]> {
+  async getProducts(params?: ProductFilterParams & { includeOutOfStock?: boolean }): Promise<Product[]> {
     try {
       const data = await apiClient<Product[]>('/products', {
         params: {
@@ -14,7 +26,11 @@ export const productsService = {
         },
       });
       if (Array.isArray(data)) {
-        return data.map(normalizeProduct);
+        const normalized = data.map(normalizeProduct);
+        if (params?.includeOutOfStock) {
+          return normalized;
+        }
+        return normalized.filter(isProductAvailable);
       }
     } catch {
       // Fallback

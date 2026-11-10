@@ -101,7 +101,11 @@ export function SpecialDealsPreview({ deal }: SpecialDealsPreviewProps) {
       categories: [categoryName],
       stockQuantity,
     };
-  });
+  }).filter((p) => (p.stockQuantity ?? 0) > 0);
+
+  if (dealProducts.length === 0) {
+    return null;
+  }
 
   return (
     <section className="mt-6 -mx-4 p-4 bg-[#edf8f2] border-y border-[#dcebe2]/50">

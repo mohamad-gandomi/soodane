@@ -13,7 +13,7 @@ import { SortSheet, SORT_OPTIONS } from '@/components/catalog/sort-sheet';
 import { ProductListCard } from '@/components/shared/product-list-card';
 import { EmptyState } from '@/components/shared/empty-state';
 import { Icon } from '@/components/ui/icon';
-import { productsService } from '@/services/products.service';
+import { productsService, isProductAvailable } from '@/services/products.service';
 import { useCart } from '@/context/cart-context';
 import { Category, Product } from '@/types/product';
 import { categoriesService } from '@/services/categories.service';
@@ -175,7 +175,8 @@ function ProductsCatalogContent() {
         matchesMin &&
         matchesMax &&
         matchesDiscount &&
-        matchesReward
+        matchesReward &&
+        isProductAvailable(p)
       );
     });
   }, [

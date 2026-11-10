@@ -89,6 +89,31 @@ export default function OrderDetailPage() {
     }
   };
 
+  // Calculate buyer reward (سود مشارکت شما)
+  const buyerReward = useMemo(() => {
+    if (!order) return 0;
+    const directReward =
+      Number((order as any).buyerReward || 0) ||
+      Number((order as any).refereeReward || 0) ||
+      Number((order as any).referralRewardSnapshot?.refereeAmount || 0);
+    if (directReward > 0) return directReward;
+
+    const itemSum = (order.items || []).reduce((sum, item: any) => {
+      const itemDirect = Number(item.buyerReward || item.refereeReward || item.cashbackEarned || 0);
+      if (itemDirect > 0) return sum + itemDirect;
+      const matched = catalogProducts.find(
+        (cp) => cp.id === item.productId || cp.name === item.productName
+      );
+      if (matched && Number(matched.reward) > 0) {
+        return sum + Number(matched.reward) * (Number(item.quantity) || 1);
+      }
+      return sum;
+    }, 0);
+
+    return itemSum;
+  }, [order, catalogProducts]);
+  const totalCashback = buyerReward;
+
   if (loading) {
     return (
       <AppShell hasBottomNav={false}>
@@ -149,30 +174,7 @@ export default function OrderDetailPage() {
     }
   }
 
-  // Calculate buyer reward (سود مشارکت شما)
-  const buyerReward = useMemo(() => {
-    if (!order) return 0;
-    const directReward =
-      Number((order as any).buyerReward || 0) ||
-      Number((order as any).refereeReward || 0) ||
-      Number((order as any).referralRewardSnapshot?.refereeAmount || 0);
-    if (directReward > 0) return directReward;
 
-    const itemSum = (order.items || []).reduce((sum, item: any) => {
-      const itemDirect = Number(item.buyerReward || item.refereeReward || item.cashbackEarned || 0);
-      if (itemDirect > 0) return sum + itemDirect;
-      const matched = catalogProducts.find(
-        (cp) => cp.id === item.productId || cp.name === item.productName
-      );
-      if (matched && Number(matched.reward) > 0) {
-        return sum + Number(matched.reward) * (Number(item.quantity) || 1);
-      }
-      return sum;
-    }, 0);
-
-    return itemSum;
-  }, [order, catalogProducts]);
-  const totalCashback = buyerReward;
 
   const handleDownloadInvoice = () => {
     if (!order) return;

@@ -67,7 +67,14 @@ export default function SpecialPage() {
     return () => clearInterval(interval);
   }, [deal]);
 
-  const rawItems = deal?.items || [];
+  const rawItems = (deal?.items || []).filter((it) => {
+    const rawProd = (it.product as any) || {};
+    const stockQuantity =
+      it.stockLimit !== null && it.stockLimit !== undefined
+        ? Math.max(0, it.stockLimit - (it.soldCount || 0))
+        : (rawProd.stockQuantity ?? 10);
+    return rawProd.manageStock !== true || stockQuantity > 0;
+  });
   const hasActiveDeal = !loading && deal && !isExpired && rawItems.length > 0;
 
   // Build full categories list from items + standard categories matching mockup
