@@ -2,7 +2,9 @@
 
 import { formatOrderNumber } from '@/lib/utils';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { productsService } from '@/services/products.service';
+import { Product } from '@/types/product';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { AppShell } from '@/components/layout/app-shell';
@@ -27,6 +29,12 @@ export default function OrderDetailPage() {
   const [receiptFile, setReceiptFile] = useState<File | null>(null);
   const [copiedCard, setCopiedCard] = useState(false);
 
+
+  const [catalogProducts, setCatalogProducts] = useState<Product[]>([]);
+
+  useEffect(() => {
+    productsService.getProducts().then(setCatalogProducts).catch(() => {});
+  }, []);
 
   useEffect(() => {
     async function loadOrder() {
@@ -142,14 +150,28 @@ export default function OrderDetailPage() {
   }
 
   // Calculate buyer reward (سود مشارکت شما)
-  const buyerReward =
-    Number((order as any).buyerReward || 0) ||
-    Number((order as any).refereeReward || 0) ||
-    Number((order as any).referralRewardSnapshot?.refereeAmount || 0) ||
-    order.items.reduce(
-      (sum, item) => sum + (Number((item as any).cashbackEarned || (item as any).refereeReward || 0)),
-      0
-    );
+  const buyerReward = useMemo(() => {
+    if (!order) return 0;
+    const directReward =
+      Number((order as any).buyerReward || 0) ||
+      Number((order as any).refereeReward || 0) ||
+      Number((order as any).referralRewardSnapshot?.refereeAmount || 0);
+    if (directReward > 0) return directReward;
+
+    const itemSum = (order.items || []).reduce((sum, item: any) => {
+      const itemDirect = Number(item.buyerReward || item.refereeReward || item.cashbackEarned || 0);
+      if (itemDirect > 0) return sum + itemDirect;
+      const matched = catalogProducts.find(
+        (cp) => cp.id === item.productId || cp.name === item.productName
+      );
+      if (matched && Number(matched.reward) > 0) {
+        return sum + Number(matched.reward) * (Number(item.quantity) || 1);
+      }
+      return sum;
+    }, 0);
+
+    return itemSum;
+  }, [order, catalogProducts]);
   const totalCashback = buyerReward;
 
   const handleDownloadInvoice = () => {
@@ -280,7 +302,9 @@ export default function OrderDetailPage() {
         <span>سود مشارکت شما از خرید این فاکتور:</span>
         <span class="partner-reward-val">${toFa(buyerReward)} تومان</span>
       </div>
-      <p class="partner-reward-desc">این سود پس از تحویل نهایی سفارش به موجودی کیف پول نقدی شما واریز شده و در سفارش‌های بعدی یا تسویه در دسترس خواهد بود.</p>
+      <p class="partner-reward-desc">${order.status === 'DELIVERED'
+        ? 'این سود مشارکت با موفقیت به موجودی کیف پول نقدی شما واریز شده و در خریدهای بعدی یا تسویه در دسترس است.'
+        : 'این سود مشارکت پس از تحویل نهایی سفارش، مستقیماً به حساب کیف پول نقدی شما واریز شده و در خریدهای بعدی یا تسویه قابل استفاده خواهد بود.'}</p>
     </div>` : ''}
     <div class="footer">
       از خرید شما از فروشگاه سودانه سپاسگزاریم • پشتیبانی و پیگیری: sodaneh.ir
@@ -691,27 +715,30 @@ export default function OrderDetailPage() {
         </button>
       </section>
 
-      {/* Only show a reward amount actually returned for this paid order. */}
-      {buyerReward > 0 && <section className="mb-4">
-        <h2 className="text-[13px] font-bold text-sn-text mb-2 px-1">
-          سود مشارکت این سفارش
-        </h2>
+      {buyerReward > 0 && (
+        <section className="mb-4">
+          <h2 className="text-[13px] font-bold text-sn-text mb-2 px-1">
+            سود مشارکت این سفارش
+          </h2>
 
-        <div className="p-3.5 rounded-[14px] bg-[#edf8f2] border border-[#d8ebe0] flex items-center justify-between gap-3">
-          <div className="text-right">
-            <b className="block text-[12px] font-bold text-sn-green">
-              {toFa(buyerReward)} تومان سود مشارکت فعال شد
-            </b>
-            <p className="text-[9.5px] text-[#556960] mt-0.5">
-              سود مشارکت شما از این سفارش پس از تایید پرداخت به کیف پول شما اضافه شد.
-            </p>
-          </div>
+          <div className="p-3.5 rounded-[14px] bg-[#edf8f2] border border-[#d8ebe0] flex items-center justify-between gap-3">
+            <div className="text-right">
+              <b className="block text-[12px] font-bold text-sn-green">
+                {toFa(buyerReward)} تومان سود مشارکت
+              </b>
+              <p className="text-[9.5px] text-[#556960] mt-0.5">
+                {order.status === 'DELIVERED'
+                  ? 'این سود مشارکت با موفقیت به موجودی کیف پول نقدی شما واریز شده است.'
+                  : 'این سود مشارکت پس از تحویل نهایی سفارش، مستقیماً به حساب کیف پول نقدی شما واریز خواهد شد.'}
+              </p>
+            </div>
 
-          <div className="w-10 h-10 rounded-[10px] bg-[#dbeee2] flex items-center justify-center text-sn-green shrink-0">
-            <Gift size={20} />
+            <div className="w-10 h-10 rounded-[10px] bg-[#dbeee2] flex items-center justify-center text-sn-green shrink-0">
+              <Gift size={20} />
+            </div>
           </div>
-        </div>
-      </section>}
+        </section>
+      )}
 
       {/* 6. Support Button (نیاز به پشتیبانی دارم) */}
       <Link href="/support" className="block mt-4">
