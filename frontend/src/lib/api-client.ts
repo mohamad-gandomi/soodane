@@ -45,11 +45,7 @@ export async function apiClient<T>(
     const response = await fetch(url, {
       cache: 'no-store',
       ...rest,
-      headers: {
-        'Cache-Control': 'no-cache, no-store, must-revalidate',
-        Pragma: 'no-cache',
-        ...mergedHeaders,
-      },
+      headers: mergedHeaders,
     });
 
     if (!response.ok) {
