@@ -19,7 +19,7 @@ export function ProductRewardBanner({
             ✦
           </i>
           <div className="flex-1">
-            <b className="block text-[11px] font-bold text-sn-text">پاداش خرید شما</b>
+            <b className="block text-[11px] font-bold text-sn-text">سود مشارکت شما</b>
             <p className="mt-0.5 text-[9.5px] text-[#72827a] leading-[1.8]">
               با خرید این محصول،{' '}
               <span className="text-sn-green font-bold">
@@ -37,7 +37,7 @@ export function ProductRewardBanner({
             </i>
             <div className="flex-1">
               <b className="block text-[11px] font-bold text-[#624b0e]">
-                پاداش معرفی مستقیم
+                سود مشارکت معرفی
               </b>
               <p className="mt-0.5 text-[9.5px] text-[#7d6b38] leading-[1.8]">
                 اگر دوستی با کد شما این محصول را بخرد،{' '}

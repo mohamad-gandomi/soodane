@@ -83,7 +83,7 @@ export default function LandingPage() {
               </h1>
               <p className="hero-copy">
                 سودانه یک تجربهٔ ساده و یکپارچه برای خرید کالاهای روزمره، استفاده
-                از تخفیف‌های ویژه و دریافت پاداش خرید است.
+                از تخفیف‌های ویژه و دریافت سود مشارکت شما است.
               </p>
               <div className="hero-actions">
                 <a className="button-primary" href={`${APP_URL}/auth`}>
@@ -95,7 +95,7 @@ export default function LandingPage() {
               </div>
               <div className="hero-note">
                 <span>تخفیف‌های روزانه</span>
-                <span>پاداش خرید</span>
+                <span>سود مشارکت شما</span>
                 <span>پیگیری شفاف سفارش</span>
               </div>
             </div>
@@ -111,7 +111,7 @@ export default function LandingPage() {
                 <img src="/assets/products/tea.jpg" alt="چای سیاه" />
               </div>
               <div className="reward-float">
-                پاداش خرید فعال<b>+ ۱۲٬۰۰۰ تومان</b>
+                سود مشارکت شما فعال<b>+ ۱۲٬۰۰۰ تومان</b>
               </div>
             </div>
           </div>
@@ -279,7 +279,7 @@ export default function LandingPage() {
               <article className="step">
                 <h3>پاداشت را در خرید بعدی استفاده کن</h3>
                 <p>
-                  پس از تأیید سفارش، پاداش خرید در کیف پول سودانه فعال می‌شود؛
+                  پس از تأیید سفارش، سود مشارکت شما در کیف پول سودانه فعال می‌شود؛
                   این اعتبار فقط هنگام خرید از سودانه قابل استفاده است و امکان
                   برداشت نقدی ندارد.
                 </p>
@@ -301,7 +301,7 @@ export default function LandingPage() {
               </div>
               <p className="wallet-note">موجودی قابل استفاده تا ۲۸ آذر</p>
               <div className="wallet-reward">
-                <span>پاداش خرید جدید</span>
+                <span>سود مشارکت شما جدید</span>
                 <b>+ ۱۲٬۰۰۰ تومان</b>
               </div>
             </div>
@@ -455,10 +455,10 @@ export default function LandingPage() {
                 type="button"
                 onClick={() => toggleFaq(0)}
               >
-                پاداش خرید چه زمانی فعال می‌شود؟ <i>›</i>
+                سود مشارکت شما چه زمانی فعال می‌شود؟ <i>›</i>
               </button>
               <p className="faq-answer">
-                پس از تأیید نهایی سفارش، پاداش خرید در کیف پول سودانه ثبت و قابل
+                پس از تأیید نهایی سفارش، سود مشارکت شما در کیف پول سودانه ثبت و قابل
                 استفاده می‌شود.
               </p>
             </article>
@@ -481,10 +481,10 @@ export default function LandingPage() {
                 type="button"
                 onClick={() => toggleFaq(2)}
               >
-                پاداش معرفی چطور محاسبه می‌شود؟ <i>›</i>
+                سود مشارکت معرفی چطور محاسبه می‌شود؟ <i>›</i>
               </button>
               <p className="faq-answer">
-                با خرید مستقیم دوست دعوت‌شده، پاداش معرفی همان محصول برای معرف
+                با خرید مستقیم دوست دعوت‌شده، سود مشارکت معرفی همان محصول برای معرف
                 ثبت می‌شود.
               </p>
             </article>

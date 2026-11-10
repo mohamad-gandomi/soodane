@@ -147,9 +147,9 @@ export default function RewardsPage() {
           <span>با دریافت پاداش جدید، تاریخ انقضای کیف پول شما تمدید می‌شود.</span>
         </div>
 
-        {/* 2 Metric Cards: مجموع پاداش خرید + مجموع پاداش معرفی */}
+        {/* 2 Metric Cards: مجموع سود مشارکت شما + مجموع سود مشارکت معرفی */}
         <div className="grid grid-cols-2 gap-2.5 mb-2.5">
-          {/* مجموع پاداش خرید */}
+          {/* مجموع سود مشارکت شما */}
           <div className="bg-white border border-[#e5ebe7] rounded-[13px] p-3 flex flex-col justify-between gap-2 shadow-[0_1px_3px_rgba(0,0,0,0.02)]">
             <span className="flex h-7 w-7 items-center justify-center rounded-[8px] bg-[#eaf7ef] text-sn-green">
               <svg
@@ -168,7 +168,7 @@ export default function RewardsPage() {
             </span>
             <div>
               <span className="block text-[10px] text-sn-muted font-medium">
-                مجموع پاداش خرید
+                مجموع سود مشارکت شما
               </span>
               <b className="block text-[13px] font-black text-sn-text mt-0.5">
                 {toFa(totalPurchaseReward)}{' '}
@@ -177,7 +177,7 @@ export default function RewardsPage() {
             </div>
           </div>
 
-          {/* مجموع پاداش معرفی */}
+          {/* مجموع سود مشارکت معرفی */}
           <div className="bg-white border border-[#e5ebe7] rounded-[13px] p-3 flex flex-col justify-between gap-2 shadow-[0_1px_3px_rgba(0,0,0,0.02)]">
             <span className="flex h-7 w-7 items-center justify-center rounded-[8px] bg-[#eaf7ef] text-sn-green">
               <svg
@@ -197,7 +197,7 @@ export default function RewardsPage() {
             </span>
             <div>
               <span className="block text-[10px] text-sn-muted font-medium">
-                مجموع پاداش معرفی
+                مجموع سود مشارکت معرفی
               </span>
               <b className="block text-[13px] font-black text-sn-text mt-0.5">
                 {toFa(totalReferralReward)}{' '}
@@ -338,7 +338,7 @@ export default function RewardsPage() {
         <div className="flex flex-col gap-3 py-2 text-sn-text text-[11px] leading-relaxed">
           <div className="p-3 rounded-[10px] bg-[#f8faf9] border border-sn-line">
             <b className="block text-[11.5px] font-bold text-sn-green mb-1">
-              پاداش خرید چیست؟
+              سود مشارکت چیست؟
             </b>
             <p className="text-sn-muted">
               با خرید کالاهای منتخب، درصدی از مبلغ فاکتور به عنوان پاداش نقدی به کیف پول شما بازگردانده می‌شود.
@@ -347,7 +347,7 @@ export default function RewardsPage() {
 
           <div className="p-3 rounded-[10px] bg-[#f8faf9] border border-sn-line">
             <b className="block text-[11.5px] font-bold text-sn-green mb-1">
-              پاداش معرفی دوستان چگونه کار می‌کند؟
+              سود مشارکت معرفی دوستان چگونه کار می‌کند؟
             </b>
             <p className="text-sn-muted">
               با ارسال کد یا لینک اختصاصی خود به دوستان، پس از ثبت‌نام و تکمیل اولین خرید آن‌ها، پاداش نقدی به کیف پول شما و دوستتان تعلق می‌گیرد.
@@ -359,7 +359,7 @@ export default function RewardsPage() {
               تمدید اعتبار کیف پول:
             </b>
             <p className="text-sn-muted">
-              با هر بار دریافت پاداش خرید یا معرفی جدید، تاریخ انقضای کل موجودی کیف پول شما به صورت خودکار تمدید می‌گردد.
+              با هر بار دریافت سود مشارکت شما یا معرفی جدید، تاریخ انقضای کل موجودی کیف پول شما به صورت خودکار تمدید می‌گردد.
             </p>
           </div>
         </div>

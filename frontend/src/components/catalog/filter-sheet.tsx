@@ -128,7 +128,7 @@ export function FilterSheet({
           </label>
 
           <label className="flex items-center justify-between h-9.5 text-[10.5px] font-medium text-[#52665b] cursor-pointer">
-            <span>دارای پاداش خرید</span>
+            <span>دارای سود مشارکت</span>
             <input
               type="checkbox"
               checked={draftOnlyReward}

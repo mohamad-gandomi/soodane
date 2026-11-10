@@ -14,7 +14,7 @@ import { toast } from 'sonner';
 
 const FILTER_TYPES = [
   { id: 'all', label: 'همه' },
-  { id: 'خرید', label: 'پاداش خرید' },
+  { id: 'خرید', label: 'سود مشارکت شما' },
   { id: 'معرفی', label: 'معرفی مستقیم' },
   { id: 'مصرف', label: 'مصرف پاداش' },
   { id: 'اصلاح', label: 'اصلاحات' },

@@ -185,7 +185,7 @@ export function HomeHeader({
                       {product.name}
                     </b>
                     <small className="block text-[8.5px] text-sn-green font-bold mt-0.5">
-                      پاداش خرید + {toFa(product.reward)} تومان
+                      سود مشارکت شما + {toFa(product.reward)} تومان
                     </small>
                   </div>
 

@@ -135,7 +135,7 @@ export function ReferralStep({
 
       {/* Transparency Note */}
       <div className="my-4 p-3 rounded-[8px] bg-[#f6f8f7] text-[#72837a] text-[10px] leading-[1.9]">
-        پاداش معرفی فقط برای دعوت مستقیم ثبت می‌شود و هیچ ساختار چندسطحی وجود ندارد.
+        سود مشارکت معرفی فقط برای دعوت مستقیم ثبت می‌شود و هیچ ساختار چندسطحی وجود ندارد.
       </div>
 
       <button

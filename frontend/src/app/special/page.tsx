@@ -109,7 +109,7 @@ export default function SpecialPage() {
   const sortLabels: Record<SortOption, string> = {
     default: 'پیش‌فرض',
     discount: 'بیشترین تخفیف',
-    reward: 'بیشترین پاداش خرید',
+    reward: 'بیشترین سود مشارکت',
     cheapest: 'ارزان‌ترین',
     expensive: 'گران‌ترین',
   };
@@ -296,7 +296,7 @@ export default function SpecialPage() {
                       </p>
                       <div className="mt-0.5">
                         <span className="inline-flex items-center px-2 py-0.5 rounded-[5px] bg-[#edf8f2] text-sn-green text-[9px] font-bold">
-                          پاداش خرید + {toFa(productObj.reward)} تومان
+                          سود مشارکت شما + {toFa(productObj.reward)} تومان
                         </span>
                       </div>
                     </div>
@@ -366,7 +366,7 @@ export default function SpecialPage() {
                 [
                   { id: 'default', label: 'پیش‌فرض' },
                   { id: 'discount', label: 'بیشترین تخفیف' },
-                  { id: 'reward', label: 'بیشترین پاداش خرید' },
+                  { id: 'reward', label: 'بیشترین سود مشارکت' },
                   { id: 'cheapest', label: 'ارزان‌ترین' },
                   { id: 'expensive', label: 'گران‌ترین' },
                 ] as const

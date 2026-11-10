@@ -141,11 +141,16 @@ export default function OrderDetailPage() {
     }
   }
 
-  // Calculate total reward/cashback
-  const totalCashback = order.items.reduce(
-    (sum, item) => sum + (Number(item.cashbackEarned) || 0),
-    0
-  );
+  // Calculate buyer reward (سود مشارکت شما)
+  const buyerReward =
+    Number((order as any).buyerReward || 0) ||
+    Number((order as any).refereeReward || 0) ||
+    Number((order as any).referralRewardSnapshot?.refereeAmount || 0) ||
+    order.items.reduce(
+      (sum, item) => sum + (Number((item as any).cashbackEarned || (item as any).refereeReward || 0)),
+      0
+    );
+  const totalCashback = buyerReward;
 
   const handleDownloadInvoice = () => {
     if (!order) return;
@@ -154,10 +159,19 @@ export default function OrderDetailPage() {
       toast.error('لطفاً باز شدن پنجره‌های پاپ‌آپ را در مرورگر مجاز کنید.');
       return;
     }
+    const origin = typeof window !== 'undefined' ? window.location.origin : 'https://app.sodaneh.ir';
+    const resolveImg = (src?: string | null) => {
+      if (!src) return `${origin}/placeholder.webp`;
+      if (src.startsWith('http://') || src.startsWith('https://')) return src;
+      if (src.startsWith('/')) return `${origin}${src}`;
+      return `${origin}/${src}`;
+    };
+
     const html = `<!DOCTYPE html>
 <html dir="rtl" lang="fa">
 <head>
   <meta charset="utf-8">
+  <base href="${origin}/">
   <title>فاکتور سفارش ${order.orderNumber} - سودانه</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: Tahoma, Vazirmatn, system-ui, sans-serif; }
@@ -173,12 +187,18 @@ export default function OrderDetailPage() {
     .meta-val { font-weight: 700; color: #1c2b23; }
     table { width: 100%; border-collapse: collapse; margin-bottom: 24px; }
     th { background: #f2f7f4; color: #2c4436; font-weight: 700; text-align: right; padding: 10px 12px; font-size: 12px; border-bottom: 1px solid #e1e7e4; }
-    td { padding: 11px 12px; border-bottom: 1px solid #edf2ef; font-size: 12px; }
+    td { padding: 10px 12px; border-bottom: 1px solid #edf2ef; font-size: 12px; vertical-align: middle; }
     .num { text-align: center; }
     .currency { text-align: left; direction: ltr; }
-    .totals { margin-right: auto; max-width: 320px; border-top: 1px solid #e1e7e4; padding-top: 10px; }
+    .product-img { width: 48px; height: 48px; object-fit: contain; border-radius: 8px; border: 1px solid #e1e7e4; background: #fafcfb; display: block; margin: 0 auto; }
+    .totals { margin-right: auto; max-width: 340px; border-top: 1px solid #e1e7e4; padding-top: 10px; }
     .totals-row { display: flex; justify-content: space-between; padding: 5px 0; font-size: 12px; color: #4b5d53; }
     .totals-row.final { border-top: 2px solid #2f9467; margin-top: 6px; padding-top: 10px; font-size: 14px; font-weight: 900; color: #166543; }
+    .totals-row.reward { color: #166543; font-weight: 700; background: #edf8f2; padding: 6px 10px; border-radius: 8px; margin-top: 8px; border: 1px dashed #2f9467; }
+    .partner-reward-box { margin-top: 24px; background: linear-gradient(135deg, #f0f8f3 0%, #e3f3ea 100%); border: 1.5px solid #2f9467; border-radius: 10px; padding: 14px 18px; }
+    .partner-reward-header { display: flex; align-items: center; justify-content: space-between; font-size: 13.5px; font-weight: 800; color: #145939; }
+    .partner-reward-val { font-size: 15px; font-weight: 900; color: #166543; direction: ltr; }
+    .partner-reward-desc { font-size: 11px; color: #4a6857; margin-top: 6px; border-top: 1px dashed #bddfcb; padding-top: 6px; line-height: 1.6; }
     .footer { text-align: center; color: #84938a; font-size: 11px; margin-top: 36px; border-top: 1px dashed #d5ded9; padding-top: 16px; }
     .actions { text-align: center; margin-bottom: 20px; }
     .btn-print { background: #2f9467; color: white; border: none; padding: 10px 24px; border-radius: 8px; font-size: 13px; font-weight: bold; cursor: pointer; }
@@ -216,8 +236,9 @@ export default function OrderDetailPage() {
       <thead>
         <tr>
           <th style="width: 36px;" class="num">#</th>
+          <th style="width: 60px;" class="num">تصویر</th>
           <th>نام کالا</th>
-          <th style="width: 70px;" class="num">تعداد</th>
+          <th style="width: 60px;" class="num">تعداد</th>
           <th style="width: 120px;" class="currency">قیمت واحد</th>
           <th style="width: 130px;" class="currency">مبلغ کل</th>
         </tr>
@@ -226,6 +247,12 @@ export default function OrderDetailPage() {
         ${order.items.map((it, idx) => `
           <tr>
             <td class="num">${idx + 1}</td>
+            <td class="num" style="padding: 6px 4px;">
+              <img src="${resolveImg(it.productImage || (it.product && (it.product as any).image))}" 
+                   alt="${it.productName}" 
+                   class="product-img"
+                   onerror="this.style.display='none'" />
+            </td>
             <td style="font-weight: 600;">${it.productName}</td>
             <td class="num">${it.quantity}</td>
             <td class="currency">${toFa(it.unitPrice)} تومان</td>
@@ -241,7 +268,20 @@ export default function OrderDetailPage() {
       ${order.discountAmount ? `<div class="totals-row" style="color: #2f9467;"><span>تخفیف:</span><span dir="ltr">− ${toFa(order.discountAmount)} تومان</span></div>` : ''}
       ${order.walletAmountPaid ? `<div class="totals-row" style="color: #2f9467;"><span>پرداخت از کیف پول:</span><span dir="ltr">− ${toFa(order.walletAmountPaid)} تومان</span></div>` : ''}
       <div class="totals-row final"><span>مبلغ نهایی:</span><span dir="ltr">${toFa(order.totalAmount)} تومان</span></div>
+      ${buyerReward > 0 ? `
+      <div class="totals-row reward">
+        <span>سود مشارکت شما:</span>
+        <span dir="ltr">+ ${toFa(buyerReward)} تومان</span>
+      </div>` : ''}
     </div>
+    ${buyerReward > 0 ? `
+    <div class="partner-reward-box">
+      <div class="partner-reward-header">
+        <span>سود مشارکت شما از خرید این فاکتور:</span>
+        <span class="partner-reward-val">${toFa(buyerReward)} تومان</span>
+      </div>
+      <p class="partner-reward-desc">این سود پس از تحویل نهایی سفارش به موجودی کیف پول نقدی شما واریز شده و در سفارش‌های بعدی یا تسویه در دسترس خواهد بود.</p>
+    </div>` : ''}
     <div class="footer">
       از خرید شما از فروشگاه سودانه سپاسگزاریم • پشتیبانی و پیگیری: sodaneh.ir
     </div>
@@ -250,7 +290,7 @@ export default function OrderDetailPage() {
     window.onload = function() {
       setTimeout(function() { window.print(); }, 400);
     };
-  <\/script>
+  </script>
 </body>
 </html>`;
     printWindow.document.open();
@@ -631,6 +671,13 @@ export default function OrderDetailPage() {
               {toFa(order.totalAmount)} تومان
             </span>
           </div>
+
+          {buyerReward > 0 && (
+            <div className="flex justify-between items-center text-sn-green bg-[#edf8f2] px-3 py-2 rounded-[10px] mt-2 border border-[#d8ebe0]">
+              <span className="font-bold text-[11.5px]">سود مشارکت شما از این سفارش</span>
+              <span className="font-bold text-[12px]">+ {toFa(buyerReward)} تومان</span>
+            </div>
+          )}
         </div>
 
         {/* Download Invoice Button */}
@@ -645,18 +692,18 @@ export default function OrderDetailPage() {
       </section>
 
       {/* Only show a reward amount actually returned for this paid order. */}
-      {totalCashback > 0 && order.paymentStatus === 'PAID' && <section className="mb-4">
+      {buyerReward > 0 && <section className="mb-4">
         <h2 className="text-[13px] font-bold text-sn-text mb-2 px-1">
-          پاداش این سفارش
+          سود مشارکت این سفارش
         </h2>
 
         <div className="p-3.5 rounded-[14px] bg-[#edf8f2] border border-[#d8ebe0] flex items-center justify-between gap-3">
           <div className="text-right">
             <b className="block text-[12px] font-bold text-sn-green">
-              {toFa(totalCashback)} تومان پاداش فعال شد
+              {toFa(buyerReward)} تومان سود مشارکت فعال شد
             </b>
             <p className="text-[9.5px] text-[#556960] mt-0.5">
-              پاداش خرید این سفارش پس از تایید پرداخت به کیف پول شما اضافه شد.
+              سود مشارکت شما از این سفارش پس از تایید پرداخت به کیف پول شما اضافه شد.
             </p>
           </div>
 

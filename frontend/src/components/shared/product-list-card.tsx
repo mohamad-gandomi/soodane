@@ -50,7 +50,7 @@ export function ProductListCard({ product, quantity, onQuantityChange }: Product
           <div className="flex items-center gap-1.5 mt-2 flex-wrap">
             {(product.reward ?? 0) > 0 && (
               <span className="inline-flex px-2 py-0.5 rounded-[5px] bg-sn-pale text-sn-green text-[9px] font-bold">
-                پاداش خرید + {toFa(product.reward)} تومان
+                سود مشارکت شما + {toFa(product.reward)} تومان
               </span>
             )}
             <span className="inline-flex px-2 py-0.5 rounded-[5px] bg-[#f0f4f2] text-[#718279] text-[8.5px] font-medium">

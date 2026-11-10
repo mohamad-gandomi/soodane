@@ -15,7 +15,7 @@ export function ReferralInviteCard({
   code = '',
   shareUrl = '',
   title = 'دوستانت را دعوت کن',
-  description = 'با خرید مستقیم دوستانت، پاداش معرفی بگیر.',
+  description = 'با خرید مستقیم دوستانت، سود مشارکت معرفی بگیر.',
 }: ReferralInviteCardProps) {
   const [copiedCode, setCopiedCode] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);

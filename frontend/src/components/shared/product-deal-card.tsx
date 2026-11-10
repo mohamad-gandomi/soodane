@@ -46,7 +46,7 @@ export function ProductDealCard({
           </p>
           <div className="mt-0.5">
             <span className="inline-flex items-center px-2 py-0.5 rounded-[5px] bg-[#edf8f2] text-sn-green text-[8.5px] font-bold">
-              پاداش خرید: + {toFa(product.reward)} تومان
+              سود مشارکت شما: + {toFa(product.reward)} تومان
             </span>
           </div>
         </div>

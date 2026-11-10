@@ -36,7 +36,7 @@ export function ProductMiniCard({
             {product.name}
           </Link>
           <small className="block mt-1 text-[8px] text-sn-green font-bold">
-            پاداش خرید + {toFa(product.reward)} تومان
+            سود مشارکت شما + {toFa(product.reward)} تومان
           </small>
         </div>
 

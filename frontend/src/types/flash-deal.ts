@@ -13,7 +13,7 @@ export interface FlashDealItem {
   discountPercentage?: number;
   discountType?: 'PERCENTAGE' | 'FIXED_AMOUNT';
   discountValue?: number;
-  cashbackAmount?: number | null; // پاداش خرید (تومان)
+  cashbackAmount?: number | null; // سود مشارکت شما (تومان)
   referrerReward?: number | null; // پاداش معرف (تومان)
   stockLimit?: number | null;
   soldCount?: number;

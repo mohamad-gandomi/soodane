@@ -44,7 +44,7 @@ export function WelcomeStep({ userName, onFinish }: WelcomeStepProps) {
           کیف پول پاداش شما فعال شد
         </strong>
         <p className="mt-1 text-[11.5px] text-[#718078]">
-          پاداش خریدهای تأییدشده در اینجا ثبت می‌شود.
+          سود مشارکت خریدهای تأییدشده در اینجا ثبت می‌شود.
         </p>
       </div>
 

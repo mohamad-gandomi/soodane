@@ -121,7 +121,7 @@ function normalizeTransaction(tx: any): WalletTransaction {
 
   if (tx.type === 'REFERRAL_REWARD') {
     category = 'معرفی';
-    title = 'پاداش معرفی مستقیم';
+    title = 'سود مشارکت معرفی';
     copy = tx.description?.includes('مریم احمدی')
       ? `خرید مریم احمدی (سفارش #${refIdFa || '۱۰۲۴۷'}) · ${relTime}`
       : `${tx.description || 'معرفی کاربر جدید'} · ${relTime}`;
@@ -145,15 +145,15 @@ function normalizeTransaction(tx: any): WalletTransaction {
     // CASHBACK / default
     category = 'خرید';
     if (tx.description?.includes('برنج هاشمی ممتاز')) {
-      title = 'پاداش خرید (برنج هاشمی ممتاز)';
+      title = 'سود مشارکت شما (برنج هاشمی ممتاز)';
       copy = refIdFa ? `سفارش #${refIdFa} · ${relTime}` : `سفارش #۱۰۲۴۸ · ${relTime}`;
       statusTag = 'فعال';
     } else if (tx.description?.includes('چای سیاه ممتاز')) {
-      title = 'پاداش خرید (چای سیاه ممتاز)';
+      title = 'سود مشارکت شما (چای سیاه ممتاز)';
       copy = refIdFa ? `سفارش #${refIdFa} · ${relTime}` : `سفارش #۱۰۲۳۸ · ${relTime}`;
       statusTag = 'مصرف‌شده';
     } else {
-      title = tx.description ? `پاداش خرید (${tx.description.replace(/^پاداش خرید\s*[-–]?\s*/, '')})` : 'پاداش خرید';
+      title = tx.description ? `سود مشارکت شما (${tx.description.replace(/^سود مشارکت شما\s*[-–]?\s*/, '')})` : 'سود مشارکت شما';
       copy = refIdFa ? `سفارش #${refIdFa} · ${relTime}` : `سفارش کالا · ${relTime}`;
       statusTag = isPositive ? 'فعال' : 'مصرف‌شده';
     }

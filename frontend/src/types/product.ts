@@ -62,7 +62,7 @@ export interface Product {
   variants?: ProductVariant[];
   attributes?: ProductAttribute[];
   referrerRewardValue?: number | null;
-  refereeRewardValue?: number | null; // پاداش خرید مشتری (تومان)
+  refereeRewardValue?: number | null; // سود مشارکت شما مشتری (تومان)
   specifications?: { label: string; value: string }[] | null;
   // UI helper shortcuts:
   categories?: string[];
