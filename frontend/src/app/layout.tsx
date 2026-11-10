@@ -9,6 +9,17 @@ export const metadata: Metadata = {
   description:
     'فروشگاه آنلاین سودانه - خرید محصولات باکیفیت به همراه پاداش خرید مستقیم و پاداش معرفی دوستان در کیف پول نقدی',
   manifest: '/manifest.json',
+  icons: {
+    icon: [
+      { url: '/favicon.ico', sizes: 'any' },
+      { url: '/icon.png', type: 'image/png', sizes: '64x64' },
+      { url: '/icon-192.png', type: 'image/png', sizes: '192x192' },
+    ],
+    shortcut: '/favicon.ico',
+    apple: [
+      { url: '/apple-touch-icon.png', sizes: '180x180', type: 'image/png' },
+    ],
+  },
 };
 
 export const viewport: Viewport = {
