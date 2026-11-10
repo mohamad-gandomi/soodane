@@ -1,3 +1,4 @@
+import { storage } from '@/lib/storage';
 import { apiClient } from '@/lib/api-client';
 import { Wallet, WalletTransaction } from '@/types/wallet';
 import { toFa } from '@/lib/utils';
@@ -13,6 +14,18 @@ export const walletService = {
     expireNotice?: string | null;
     daysRemaining?: number | null;
   }> {
+    if (!storage.getToken()) {
+      return {
+        balance: 0,
+        currency: 'IRT',
+        totalPurchaseReward: 0,
+        totalReferralReward: 0,
+        totalEarned: 0,
+        expiresAt: null,
+        expireNotice: null,
+        daysRemaining: null,
+      };
+    }
     try {
       const data = await apiClient<any>('/wallet/me');
       if (data && (typeof data.balance === 'number' || typeof data.balance === 'string')) {
@@ -58,6 +71,7 @@ export const walletService = {
   },
 
   async getTransactions(limit = 50, offset = 0): Promise<WalletTransaction[]> {
+    if (!storage.getToken()) return [];
     try {
       const data = await apiClient<any>('/wallet/me/transactions', {
         params: { limit, offset },

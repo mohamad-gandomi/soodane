@@ -1,8 +1,19 @@
+import { storage } from '@/lib/storage';
 import { apiClient } from '@/lib/api-client';
 import { ReferralStats } from '@/types/referral';
 
 export const referralService = {
   async getMyStats(): Promise<ReferralStats> {
+    if (!storage.getToken()) {
+      return {
+        code: '',
+        shareUrl: '',
+        clickCount: 0,
+        successfulReferrals: 0,
+        totalEarned: 0,
+        friends: [],
+      };
+    }
     try {
       const data = await apiClient<any>('/referrals/me');
       if (data) {

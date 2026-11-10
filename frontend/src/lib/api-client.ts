@@ -49,6 +49,10 @@ export async function apiClient<T>(
     });
 
     if (!response.ok) {
+      if (response.status === 401) {
+        storage.removeToken();
+        storage.removeUser();
+      }
       const errorBody = await response.json().catch(() => null);
       throw new Error(
         errorBody?.message || `API request failed with status ${response.status}`

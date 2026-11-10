@@ -1,8 +1,10 @@
+import { storage } from '@/lib/storage';
 import { apiClient } from '@/lib/api-client';
 import { Address } from '@/types/user';
 
 export const addressesService = {
   async getAddresses(): Promise<Address[]> {
+    if (!storage.getToken()) return [];
     try {
       const data = await apiClient<Address[]>('/users/addresses');
       if (Array.isArray(data)) {
