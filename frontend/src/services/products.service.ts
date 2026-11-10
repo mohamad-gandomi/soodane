@@ -7,7 +7,7 @@ export const productsService = {
       const data = await apiClient<Product[]>('/products', {
         params: {
           search: params?.search,
-          categoryId: params?.categoryId,
+          categoryId: params?.categoryId, categorySlug: (params as any)?.categorySlug, limit: params?.limit || 500,
           minPrice: params?.minPrice,
           maxPrice: params?.maxPrice,
           sortBy: params?.sortBy,

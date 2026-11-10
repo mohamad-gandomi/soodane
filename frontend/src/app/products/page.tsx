@@ -47,7 +47,7 @@ function ProductsCatalogContent() {
     let active = true;
     const controller = new AbortController();
     Promise.all([
-      productsService.getProducts(),
+      productsService.getProducts({ limit: 500 }),
       categoriesService.getCategories(controller.signal).catch(() => [] as Category[]),
     ]).then(([items, categoryList]) => {
       if (!active) return;

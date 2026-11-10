@@ -6,6 +6,13 @@ import { Product } from '@/types/product';
 import { calculateDiscount, formatMoney, toFa } from '@/lib/utils';
 import { QuantityControl } from './quantity-control';
 
+function truncateText(text?: string | null, max = 45): string {
+  if (!text) return '';
+  const clean = text.trim();
+  if (clean.length <= max) return clean;
+  return clean.slice(0, max).trim() + '...';
+}
+
 interface ProductListCardProps {
   product: Product;
   quantity: number;
@@ -35,7 +42,11 @@ export function ProductListCard({ product, quantity, onQuantityChange }: Product
           <Link href={`/products/${product.slug}`} className="text-[13px] font-bold text-sn-text leading-snug hover:text-sn-green transition-colors line-clamp-2">
             {product.name}
           </Link>
-          {product.shortDescription && <p className="mt-1 text-[10px] leading-relaxed text-sn-muted line-clamp-1">{product.shortDescription}</p>}
+          {(product.shortDescription || product.description) && (
+            <p className="mt-1 text-[10px] leading-relaxed text-sn-muted line-clamp-1" title={product.shortDescription || product.description}>
+              {truncateText(product.shortDescription || product.description, 45)}
+            </p>
+          )}
           <div className="flex items-center gap-1.5 mt-2 flex-wrap">
             {(product.reward ?? 0) > 0 && (
               <span className="inline-flex px-2 py-0.5 rounded-[5px] bg-sn-pale text-sn-green text-[9px] font-bold">
