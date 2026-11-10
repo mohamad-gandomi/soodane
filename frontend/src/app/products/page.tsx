@@ -18,7 +18,9 @@ import { useCart } from '@/context/cart-context';
 import { Category, Product } from '@/types/product';
 import { categoriesService } from '@/services/categories.service';
 import { matchesProductCategories } from '@/lib/catalog';
-import { toFa } from '@/lib/utils';
+import { toFa, formatMoney } from '@/lib/utils';
+import Link from 'next/link';
+import { toast } from 'sonner';
 
 function ProductsCatalogContent() {
   const router = useRouter();
@@ -41,7 +43,23 @@ function ProductsCatalogContent() {
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [isSortOpen, setIsSortOpen] = useState(false);
 
-  const { getItemQuantity, setQuantity } = useCart();
+  const { totalCount, subtotal, getItemQuantity, setQuantity } = useCart();
+
+  const handleQuantityChange = (product: Product, quantity: number) => {
+    const prev = getItemQuantity(product.id);
+    setQuantity(product, quantity);
+    if (quantity > prev) {
+      toast.success(`«${product.name}» به سبد خرید افزوده شد`, {
+        duration: 2000,
+        position: 'top-center',
+      });
+    } else if (quantity === 0 && prev > 0) {
+      toast.info(`«${product.name}» از سبد خرید حذف شد`, {
+        duration: 1500,
+        position: 'top-center',
+      });
+    }
+  };
 
   useEffect(() => {
     let active = true;
@@ -252,7 +270,7 @@ function ProductsCatalogContent() {
               key={product.id}
               product={product}
               quantity={getItemQuantity(product.id)}
-              onQuantityChange={quantity => setQuantity(product, quantity)}
+              onQuantityChange={(quantity) => handleQuantityChange(product, quantity)}
             />
           ))}
         </section>
@@ -297,11 +315,56 @@ function ProductsCatalogContent() {
   );
 }
 
+function ProductsHeader() {
+  const { totalCount } = useCart();
+  return (
+    <TopHeader title="همه کالاها" backHref="/">
+      <Link
+        href="/cart"
+        className="relative flex h-[36px] w-[36px] items-center justify-center rounded-[9px] border border-sn-line bg-white text-[#506459] hover:bg-slate-50 transition-colors"
+        aria-label="سبد خرید"
+      >
+        <Icon name="cart" size={18} />
+        {totalCount > 0 && (
+          <i className="absolute -top-1.5 -left-1.5 min-w-[16px] h-[16px] flex items-center justify-center px-1 rounded-full border-2 border-white bg-sn-green text-white text-[8px] font-black not-italic shadow-sm">
+            {toFa(totalCount)}
+          </i>
+        )}
+      </Link>
+    </TopHeader>
+  );
+}
+
+function ProductsBottomCartBar() {
+  const { totalCount, subtotal } = useCart();
+  if (totalCount === 0) return null;
+
+  return (
+    <div className="fixed bottom-[86px] left-1/2 -translate-x-1/2 w-[calc(100%-32px)] max-w-app z-30 pointer-events-none">
+      <Link
+        href="/cart"
+        className="pointer-events-auto flex items-center justify-between bg-sn-green text-white px-4 py-3 rounded-2xl shadow-xl hover:bg-sn-green/95 transition-all active:scale-[0.98]"
+      >
+        <div className="flex items-center gap-2.5">
+          <span className="flex h-6 min-w-6 items-center justify-center rounded-full bg-white text-sn-green text-xs font-black px-1.5 shadow-xs">
+            {toFa(totalCount)}
+          </span>
+          <span className="text-xs font-extrabold">مشاهده سبد خرید</span>
+        </div>
+        <div className="flex items-center gap-1.5 text-xs font-black">
+          <span>{formatMoney(subtotal)}</span>
+          <span className="text-sm font-bold">←</span>
+        </div>
+      </Link>
+    </div>
+  );
+}
+
 export default function ProductsPage() {
   return (
     <AppShell>
       <TopPromo />
-      <TopHeader title="همه کالاها" backHref="/" />
+      <ProductsHeader />
       <Suspense
         fallback={
           <div className="py-12 text-center text-sn-muted text-xs">
@@ -311,6 +374,7 @@ export default function ProductsPage() {
       >
         <ProductsCatalogContent />
       </Suspense>
+      <ProductsBottomCartBar />
       <BottomNav />
     </AppShell>
   );
